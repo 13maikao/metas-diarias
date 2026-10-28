@@ -81,8 +81,8 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 #lista td.c{text-align:center;width:1%;padding:0 8px}
 #lista input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
 #lista tr.paga input[type=text]{text-decoration:line-through;color:var(--muted)}
-#grade td.f{padding:1px 6px}
-#grade td.f input{width:9ch;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:inherit;font:inherit;text-align:right;padding:1px 4px}
+#grade td.k label{justify-content:flex-end}
+#grade td.k.ok span{text-decoration:line-through;color:var(--muted)}
 #grade tr.pas td{color:var(--muted)}
 </style>
 </head>
@@ -117,7 +117,7 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 <div class="resumo">
   <div class="big"><span id="metaHoje">–</span><small id="metaLbl">meta de hoje</small></div>
   <div class="peq"><span id="totalContas">R$ 0,00</span><small>falta pagar no mês</small></div>
-  <div class="peq"><span id="juntado">R$ 0,00</span><small>juntado no mês</small></div>
+  <div class="peq"><span id="juntado">R$ 0,00</span><small>já guardado no mês</small></div>
   <div class="peq"><span id="diasTrab">0</span><small>dias de trabalho no mês</small></div>
 </div>
 
@@ -136,7 +136,7 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 </div>
 
 <h2>Quanto fazer por dia</h2>
-<p class="dica">Marque os dias de folga e, na coluna Fiz, quanto você juntou em cada dia. A meta é dividida entre os dias de trabalho que restam até o vencimento, e o que você já juntou abate as contas, da que vence primeiro para a última.</p>
+<p class="dica">Marque os dias de folga. Em cada dia, marque a caixinha ao lado do valor quando já tiver guardado aquela parte: o valor fica riscado e o total do dia diminui. Cada conta é dividida entre os dias de trabalho que restam até o vencimento.</p>
 <div class="semana" id="semana"></div>
 <div class="box" id="grade"></div>
 <div id="aviso"></div>
@@ -146,13 +146,13 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 <script>
 (function(){
 var C=window.CONFIG||{},sb=window.supabase.createClient(C.url||"COLE_AQUI_A_URL_DO_PROJETO",C.key||"COLE_AQUI_A_CHAVE_ANON");
-var user=null,dados=[],folgas={},ganhos={},exc={},fsem=[],rem={},ym=agora(),tmr=null,pendente=false,recuperando=false;
+var user=null,dados=[],folgas={},feitos={},exc={},fsem=[],rem={},ym=agora(),tmr=null,pendente=false,recuperando=false;
 var DS=["dom","seg","ter","qua","qui","sex","sáb"];
 function $(i){return document.getElementById(i);}
 function status(x){$("sync").textContent=x;}
 function salvar(){if(!user)return;pendente=true;clearTimeout(tmr);status("Salvando…");tmr=setTimeout(enviar,500);}
 async function enviar(){
-  var r=await sb.from("planilha").upsert({user_id:user.id,dados:{v:2,contas:dados,ganhos:ganhos,exc:exc,fsem:fsem,rem:rem},folgas:folgas,updated_at:new Date().toISOString()});
+  var r=await sb.from("planilha").upsert({user_id:user.id,dados:{v:2,contas:dados,feitos:feitos,exc:exc,fsem:fsem,rem:rem},folgas:folgas,updated_at:new Date().toISOString()});
   if(r.error){status("Erro ao salvar. Verifique a conexão.");return;}
   pendente=false;status("Salvo");
 }
@@ -160,7 +160,7 @@ async function carregar(){
   var r=await sb.from("planilha").select("dados,folgas").eq("user_id",user.id).maybeSingle();
   if(r.error){status("Erro ao carregar os dados.");return;}
   var d=r.data&&r.data.dados;if(Array.isArray(d))d={contas:d};d=d||{};
-  dados=d.contas||[];ganhos=d.ganhos||{};exc=d.exc||{};fsem=d.fsem||[];rem=d.rem||{};
+  dados=d.contas||[];feitos=d.feitos||{};exc=d.exc||{};fsem=d.fsem||[];rem=d.rem||{};
   folgas=(r.data&&r.data.folgas)||{};
   lista();status("Salvo");
 }
@@ -202,38 +202,38 @@ function gerarFixas(){
 }
 
 function plano(){
-  var N=nDias(ym),h=agora(),hoje=new Date().getDate(),d,g=ganhos[ym]||{};
-  var ini=ym<h?N+1:(ym===h?hoje:1),feito=0,pagas=0,info=[],rows=[];
-  for(d=1;d<ini;d++)feito+=g[d]||0;
-  var bills=doMes();
-  bills.forEach(function(c){if(c.pago)pagas+=c.valor;});
-  var pool=Math.max(0,feito-pagas);
-  bills.forEach(function(c){
+  var N=nDias(ym),h=agora(),hoje=new Date().getDate(),d,F=feitos[ym]||{};
+  var ini=ym<h?N+1:(ym===h?hoje:1),info=[],rows=[];
+  doMes().forEach(function(c){
     if(c.pago)return;
-    var D=c.dia>0?Math.min(c.dia,N):0,use=Math.min(pool,c.valor),n=0,rest;
-    pool-=use;rest=c.valor-use;
-    for(d=ini;d<=D;d++)if(!isOff(d))n++;
-    info.push({c:c,D:D,rest:rest,n:n,por:n?Math.ceil(rest*100/n-1e-9)/100:0});
+    var D=c.dia>0?Math.min(c.dia,N):0,mk=F[c.id]||{},saved=0,n=0,rest;
+    Object.keys(mk).forEach(function(k){saved+=mk[k];});
+    rest=Math.max(0,c.valor-saved);
+    for(d=ini;d<=D;d++)if(!isOff(d)&&!mk[d])n++;
+    info.push({c:c,D:D,mk:mk,rest:rest,n:n,por:n?Math.ceil(rest*100/n-1e-9)/100:0});
   });
   for(d=1;d<=N;d++){
-    var off=isOff(d),cells=[],tot=0;
-    info.forEach(function(x){var v=(d>=ini&&!off&&d<=x.D)?x.por:0;cells.push(v);tot+=v;});
-    rows.push({d:d,off:off,cells:cells,tot:tot,fiz:g[d]||0,pas:d<ini});
+    var off=isOff(d),cells=[],tot=0,qm=0;
+    info.forEach(function(x){
+      var m=x.mk[d]||0,v=(!m&&d>=ini&&!off&&d<=x.D)?x.por:0;
+      cells.push({v:v,m:m});tot+=v;if(m)qm++;
+    });
+    rows.push({d:d,off:off,cells:cells,tot:tot,qm:qm,pas:d<ini});
   }
   return {N:N,ini:ini,info:info,rows:rows};
 }
 
 function resumo(p){
-  var tot=0,dt=0,jun=0,g=ganhos[ym]||{};
+  var tot=0,dt=0,jun=0,F=feitos[ym]||{};
   doMes().forEach(function(c){if(!c.pago)tot+=c.valor;});
-  Object.keys(g).forEach(function(k){jun+=g[k];});
+  Object.keys(F).forEach(function(b){Object.keys(F[b]).forEach(function(k){jun+=F[b][k];});});
   p.rows.forEach(function(r){if(!r.off)dt++;});
   $("totalContas").textContent=brl(tot);$("juntado").textContent=brl(jun);$("diasTrab").textContent=dt;
   var el=$("metaHoje"),lbl=$("metaLbl");
   if(ym===agora()){
     var r=p.rows[new Date().getDate()-1];
     el.textContent=r.off?"Folga":brl(r.tot);
-    lbl.textContent=r.off?"hoje é dia de folga":"meta de hoje"+(r.fiz?" · faltam "+brl(Math.max(0,r.tot-r.fiz)):"");
+    lbl.textContent=r.off?"hoje é dia de folga":(r.tot===0&&r.qm?"meta de hoje cumprida":"meta de hoje");
   }else{el.textContent="–";lbl.textContent="meta de hoje (só no mês atual)";}
 }
 
@@ -241,31 +241,34 @@ function grade(){
   var p=plano(),box=$("grade"),h="",av=[];
   resumo(p);
   if(!doMes().length){box.innerHTML='<div class="vazio">Adicione contas acima para ver a meta de cada dia.</div>';$("aviso").textContent="";return;}
-  h+='<table><thead><tr><th class="s1">Folga · dia</th><th>Fiz (R$)</th>';
+  h+='<table><thead><tr><th class="s1">Folga · dia</th>';
   p.info.forEach(function(x){
     var nm=x.c.nome||"Conta sem nome",ruim=false;
     if(x.D===0){ruim=true;av.push(nm+": informe o dia do vencimento.");}
     else if(x.rest>0&&x.n===0){ruim=true;av.push(x.D<p.ini?nm+": venceu e ainda faltam "+brl(x.rest)+".":nm+": todos os dias até o vencimento estão de folga.");}
-    h+='<th'+(ruim?' class="al"':'')+'><b>'+esc(x.c.nome||"Sem nome")+'</b><span class="inf">'+(x.D?'até dia '+x.D+' · ':'')+(x.rest<x.c.valor?'falta '+fmt(x.rest)+' de ':'')+fmt(x.c.valor)+'</span></th>';
+    h+='<th'+(ruim?' class="al"':'')+'><b>'+esc(x.c.nome||"Sem nome")+'</b><span class="inf">'+(x.D?'até dia '+x.D+' · ':'')+(x.rest<=0?'guardado · ':x.rest<x.c.valor?'falta '+fmt(x.rest)+' de ':'')+fmt(x.c.valor)+'</span></th>';
   });
   h+='<th class="s2">Meta do dia</th></tr></thead><tbody>';
   var eh=ym===agora()?new Date().getDate():0;
   p.rows.forEach(function(r){
-    h+='<tr class="'+(r.off?'off ':'')+(r.pas?'pas ':'')+(r.d===eh?'hoje':'')+'"><td class="s1"><label><input type="checkbox" data-d="'+r.d+'"'+(r.off?' checked':'')+' aria-label="Folga no dia '+r.d+'"><span><b>'+r.d+'</b> '+DS[wd(ym,r.d)]+'</span></label></td>';
-    h+='<td class="f"><input type="text" inputmode="decimal" data-f="'+r.d+'" value="'+fmt(r.fiz)+'" placeholder="0,00" aria-label="Quanto fez no dia '+r.d+'"></td>';
-    r.cells.forEach(function(v){h+='<td>'+(v?fmt(v):"–")+'</td>';});
+    h+='<tr class="'+(r.off?'off ':'')+(r.pas?'pas ':'')+(r.d===eh?'hoje':'')+'"><td class="s1"><label><input type="checkbox" data-o="'+r.d+'"'+(r.off?' checked':'')+' aria-label="Folga no dia '+r.d+'"><span><b>'+r.d+'</b> '+DS[wd(ym,r.d)]+'</span></label></td>';
+    r.cells.forEach(function(c,i){
+      if(c.m||c.v)h+='<td class="k'+(c.m?' ok':'')+'"><label><input type="checkbox" data-b="'+p.info[i].c.id+'" data-k="'+r.d+'"'+(c.m?' checked':'')+' aria-label="Já guardei esta parte de '+esc(p.info[i].c.nome||"conta")+' no dia '+r.d+'"><span>'+fmt(c.m||c.v)+'</span></label></td>';
+      else h+='<td>–</td>';
+    });
     h+='<td class="s2">'+(r.tot?fmt(r.tot):"–")+'</td></tr>';
   });
   box.innerHTML=h+'</tbody></table>';
-  box.querySelectorAll("input[data-d]").forEach(function(cb){
-    cb.onchange=function(){setOff(+cb.dataset.d,cb.checked);salvar();grade();var e=box.querySelector('input[data-d="'+cb.dataset.d+'"]');if(e)e.focus();};
+  box.querySelectorAll("input[data-o]").forEach(function(cb){
+    cb.onchange=function(){setOff(+cb.dataset.o,cb.checked);salvar();grade();var e=box.querySelector('input[data-o="'+cb.dataset.o+'"]');if(e)e.focus();};
   });
-  box.querySelectorAll("input[data-f]").forEach(function(inp){
-    inp.onchange=function(){
-      var d=inp.dataset.f,v=num(inp.value);
-      ganhos[ym]=ganhos[ym]||{};
-      if(v)ganhos[ym][d]=v;else delete ganhos[ym][d];
+  box.querySelectorAll("input[data-b]").forEach(function(cb){
+    cb.onchange=function(){
+      var b=cb.dataset.b,d=cb.dataset.k,i=p.info.map(function(x){return x.c.id;}).indexOf(b);
+      feitos[ym]=feitos[ym]||{};feitos[ym][b]=feitos[ym][b]||{};
+      if(cb.checked)feitos[ym][b][d]=p.rows[d-1].cells[i].v;else delete feitos[ym][b][d];
       salvar();grade();
+      var e=box.querySelector('input[data-b="'+b+'"][data-k="'+d+'"]');if(e)e.focus();
     };
   });
   $("aviso").textContent=av.join(" ");
@@ -379,7 +382,7 @@ sb.auth.onAuthStateChange(function(ev,sess){
   var novo=sess?sess.user.id:null,atual=user?user.id:null;
   user=sess?sess.user:null;
   if(novo===atual)return;
-  if(!user){dados=[];folgas={};ganhos={};exc={};fsem=[];rem={};$("senha").value="";mostrar();return;}
+  if(!user){dados=[];folgas={};feitos={};exc={};fsem=[];rem={};$("senha").value="";mostrar();return;}
   $("quem").textContent=user.email;
   mostrar();setTimeout(carregar,0);
 });
