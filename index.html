@@ -55,11 +55,12 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 #grade th{text-align:right;white-space:normal;padding:4px 8px;font-size:.72rem;line-height:1.25}
 #grade .s1{position:sticky;left:0;text-align:left;background:var(--panel);z-index:1}
 #grade th.s1{background:var(--head)}
-#grade .s2{position:sticky;right:0;background:var(--panel);font-weight:700;z-index:1;border-left:2px solid var(--line)}
-#grade th.s2{background:var(--head);color:var(--ink)}
+#grade .s2,#grade .s3{position:sticky;right:0;background:var(--panel);font-weight:700;z-index:1;border-left:2px solid var(--line)}
+#grade .s2{right:var(--w3,96px)}
+#grade th.s2,#grade th.s3{background:var(--head);color:var(--ink)}
 #grade tr.off td{background:var(--off);color:var(--muted)}
-#grade tr.off .s1,#grade tr.off .s2{background:var(--off)}
-#grade tr.hoje td,#grade tr.hoje .s1,#grade tr.hoje .s2{background:var(--hoje)}
+#grade tr.off .s1,#grade tr.off .s2,#grade tr.off .s3{background:var(--off)}
+#grade tr.hoje td,#grade tr.hoje .s1,#grade tr.hoje .s2,#grade tr.hoje .s3{background:var(--hoje)}
 #grade label{display:flex;align-items:center;gap:6px;cursor:pointer}
 #grade input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:pointer}
 #grade tfoot td{font-weight:700;background:var(--head)}
@@ -227,13 +228,17 @@ function plano(){
     for(d=ini;d<=D;d++)if(!isOff(d)&&!mk[d])n++;
     info.push({c:c,D:D,mk:mk,rest:rest,n:n,atr:D>0&&D<ini&&rest>0,por:n?Math.ceil(rest*100/n-1e-9)/100:0});
   });
+  var acc=0;
   for(d=1;d<=N;d++){
-    var off=isOff(d),cells=[],tot=0,qm=0;
+    var off=isOff(d),cells=[],tot=0,qm=0,at=0,fim=wd(ym,d)===0||d===N;
     info.forEach(function(x){
       var m=x.mk[d]||0,v=(!m&&d>=ini&&!off&&d<=x.D)?x.por:0;
+      if(x.atr&&x.D===d&&!m)at+=x.rest;
       cells.push({v:v,m:m});tot+=v;if(m)qm++;
     });
-    rows.push({d:d,off:off,cells:cells,tot:tot,qm:qm,pas:d<ini});
+    acc+=tot+at;
+    rows.push({d:d,off:off,cells:cells,tot:tot,at:at,qm:qm,pas:d<ini,sem:fim?acc:null});
+    if(fim)acc=0;
   }
   return {N:N,ini:ini,info:info,rows:rows};
 }
@@ -264,7 +269,7 @@ function grade(){
     var l1=x.D?(x.D<p.ini?'venceu dia ':'vence dia ')+x.D:'sem vencimento',l2=x.rest<=0?'guardado':(x.rest<x.c.valor?'falta '+fmt(x.rest):'');
     h+='<th'+(ruim?' class="al'+(x.atr?' atr':'')+'"':'')+'><b>'+esc(x.c.nome||"Sem nome")+'</b><span class="inf">'+l1+'</span>'+(l2?'<span class="inf">'+l2+'</span>':'')+'</th>';
   });
-  h+='<th class="s2">Meta do dia</th></tr></thead><tbody>';
+  h+='<th class="s2">Meta do dia</th><th class="s3">Meta semanal</th></tr></thead><tbody>';
   var eh=ym===agora()?new Date().getDate():0;
   p.rows.forEach(function(r){
     h+='<tr class="'+(r.off?'off ':'')+(r.pas?'pas ':'')+(r.d===eh?'hoje':'')+'"><td class="s1"><label><input type="checkbox" data-o="'+r.d+'"'+(r.off?' checked':'')+' aria-label="Folga no dia '+r.d+'"><span><b>'+r.d+'</b> '+DS[wd(ym,r.d)]+'</span></label></td>';
@@ -274,9 +279,11 @@ function grade(){
       else if(x.atr&&r.d===x.D)h+='<td class="atr"><b>'+fmt(x.rest)+'</b></td>';
       else h+='<td'+(x.atr?' class="atr"':'')+'>–</td>';
     });
-    h+='<td class="s2">'+(r.tot?fmt(r.tot):"–")+'</td></tr>';
+    h+='<td class="s2'+(r.at?' atr':'')+'">'+((r.tot+r.at)?fmt(r.tot+r.at):"–")+'</td><td class="s3">'+(r.sem===null?'':(r.sem?fmt(r.sem):'–'))+'</td></tr>';
   });
   box.innerHTML=h+'</tbody></table>';
+  var th3=box.querySelector("th.s3"),tb=box.querySelector("table");
+  if(th3&&tb)tb.style.setProperty("--w3",th3.offsetWidth+"px");
   box.querySelectorAll("input[data-o]").forEach(function(cb){
     cb.onchange=function(){setOff(+cb.dataset.o,cb.checked);salvar();grade();var e=box.querySelector('input[data-o="'+cb.dataset.o+'"]');if(e)e.focus();};
   });
