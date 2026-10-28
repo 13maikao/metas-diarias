@@ -73,8 +73,17 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 .login input{width:100%;font:inherit;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);margin-bottom:10px}
 .login .row{display:flex;gap:10px}
 .login .row button{flex:1}
-#msg{color:var(--bad);font-size:.9rem;min-height:1.4em;margin:0 0 6px}
+#msg,#msg2{color:var(--bad);font-size:.9rem;min-height:1.4em;margin:0 0 6px}
 [hidden]{display:none!important}
+.link{border:0;background:none;color:var(--accent);padding:10px 0 0;text-decoration:underline}
+.semana{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:0 0 10px;font-size:.9rem}
+.semana label{display:flex;align-items:center;gap:4px;cursor:pointer}
+#lista td.c{text-align:center;width:1%;padding:0 8px}
+#lista input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+#lista tr.paga input[type=text]{text-decoration:line-through;color:var(--muted)}
+#grade td.f{padding:1px 6px}
+#grade td.f input{width:9ch;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:inherit;font:inherit;text-align:right;padding:1px 4px}
+#grade tr.pas td{color:var(--muted)}
 </style>
 </head>
 <body>
@@ -86,7 +95,15 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
     <input type="password" id="senha" placeholder="Senha (mínimo 6 caracteres)" autocomplete="current-password" required minlength="6" aria-label="Senha">
     <p id="msg" role="alert"></p>
     <div class="row"><button class="prim" type="submit">Entrar</button><button type="button" id="criar">Criar conta</button></div>
+    <button type="button" id="esqueci" class="link">Esqueci minha senha</button>
   </form>
+</section>
+<section id="nova" class="login" hidden>
+  <h1>Nova senha</h1>
+  <p>Digite a nova senha para a sua conta.</p>
+  <input type="password" id="senha2" placeholder="Nova senha (mínimo 6 caracteres)" autocomplete="new-password" aria-label="Nova senha">
+  <p id="msg2" role="alert"></p>
+  <button class="prim" id="salvarSenha" type="button">Salvar nova senha</button>
 </section>
 <main id="app" hidden>
 <h1>Meta diária das contas</h1>
@@ -99,15 +116,16 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 </div>
 <div class="resumo">
   <div class="big"><span id="metaHoje">–</span><small id="metaLbl">meta de hoje</small></div>
-  <div class="peq"><span id="totalContas">R$ 0,00</span><small>total das contas</small></div>
+  <div class="peq"><span id="totalContas">R$ 0,00</span><small>falta pagar no mês</small></div>
+  <div class="peq"><span id="juntado">R$ 0,00</span><small>juntado no mês</small></div>
   <div class="peq"><span id="diasTrab">0</span><small>dias de trabalho no mês</small></div>
 </div>
 
 <h2>Contas do mês</h2>
-<p class="dica">Informe o nome, o dia do vencimento e o valor de cada conta.</p>
+<p class="dica">Informe o nome, o dia do vencimento e o valor. Marque Fixa nas contas que se repetem todo mês e Paga quando pagar.</p>
 <div class="box" id="lista">
   <table>
-    <thead><tr><th>Conta</th><th>Vence no dia</th><th>Valor (R$)</th><th></th></tr></thead>
+    <thead><tr><th>Conta</th><th>Vence no dia</th><th>Valor (R$)</th><th>Fixa</th><th>Paga</th><th></th></tr></thead>
     <tbody id="corpo"></tbody>
   </table>
   <div class="vazio" id="vazio" hidden>Nenhuma conta neste mês. Adicione a primeira abaixo.</div>
@@ -118,108 +136,153 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 </div>
 
 <h2>Quanto fazer por dia</h2>
-<p class="dica">Marque os dias de folga. Cada conta é dividida entre os dias de trabalho, do dia 1 até o vencimento.</p>
+<p class="dica">Marque os dias de folga e, na coluna Fiz, quanto você juntou em cada dia. A meta é dividida entre os dias de trabalho que restam até o vencimento, e o que você já juntou abate as contas, da que vence primeiro para a última.</p>
+<div class="semana" id="semana"></div>
 <div class="box" id="grade"></div>
 <div id="aviso"></div>
 </main>
+<script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 (function(){
-var SUPABASE_URL="https://lbqvzupaijhbsdzcsedd.supabase.co",SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxicXZ6dXBhaWpoYnNkemNzZWRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNTUwMzEsImV4cCI6MjEwODczMTAzMX0.OcQ8tc9AcbvVE3xPU-SsN2NBI1qucEXdMvVFPkhX6mQ";
-var sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY),user=null,dados=[],folgas={},ym=agora(),tmr=null,pendente=false;
-function status(x){document.getElementById("sync").textContent=x;}
-function salvar(){pendente=true;clearTimeout(tmr);status("Salvando…");tmr=setTimeout(enviar,500);}
+var C=window.CONFIG||{},sb=window.supabase.createClient(C.url||"COLE_AQUI_A_URL_DO_PROJETO",C.key||"COLE_AQUI_A_CHAVE_ANON");
+var user=null,dados=[],folgas={},ganhos={},exc={},fsem=[],rem={},ym=agora(),tmr=null,pendente=false,recuperando=false;
+var DS=["dom","seg","ter","qua","qui","sex","sáb"];
+function $(i){return document.getElementById(i);}
+function status(x){$("sync").textContent=x;}
+function salvar(){if(!user)return;pendente=true;clearTimeout(tmr);status("Salvando…");tmr=setTimeout(enviar,500);}
 async function enviar(){
-  var r=await sb.from("planilha").upsert({user_id:user.id,dados:dados,folgas:folgas,updated_at:new Date().toISOString()});
+  var r=await sb.from("planilha").upsert({user_id:user.id,dados:{v:2,contas:dados,ganhos:ganhos,exc:exc,fsem:fsem,rem:rem},folgas:folgas,updated_at:new Date().toISOString()});
   if(r.error){status("Erro ao salvar. Verifique a conexão.");return;}
   pendente=false;status("Salvo");
 }
 async function carregar(){
   var r=await sb.from("planilha").select("dados,folgas").eq("user_id",user.id).maybeSingle();
   if(r.error){status("Erro ao carregar os dados.");return;}
-  dados=(r.data&&r.data.dados)||[];folgas=(r.data&&r.data.folgas)||{};
+  var d=r.data&&r.data.dados;if(Array.isArray(d))d={contas:d};d=d||{};
+  dados=d.contas||[];ganhos=d.ganhos||{};exc=d.exc||{};fsem=d.fsem||[];rem=d.rem||{};
+  folgas=(r.data&&r.data.folgas)||{};
   lista();status("Salvo");
 }
 function agora(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
 function mover(m,n){var p=m.split("-"),d=new Date(+p[0],+p[1]-1+n,1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
 function nomeMes(m){var p=m.split("-");return new Date(+p[0],+p[1]-1,1).toLocaleDateString("pt-BR",{month:"long",year:"numeric"});}
 function nDias(m){var p=m.split("-");return new Date(+p[0],+p[1],0).getDate();}
-function sem(m,d){var p=m.split("-");return new Date(+p[0],+p[1]-1,d).toLocaleDateString("pt-BR",{weekday:"short"}).replace(".","");}
+function wd(m,d){var p=m.split("-");return new Date(+p[0],+p[1]-1,d).getDay();}
 function brl(n){return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});}
 function num(v){var n=parseFloat(String(v).replace(/\./g,"").replace(",","."));return isNaN(n)?0:n;}
 function fmt(n){return n?n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}):"";}
 function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
 function doMes(){return dados.filter(function(c){return c.mes===ym;}).sort(function(a,b){return (a.dia||99)-(b.dia||99);});}
-function offs(){return folgas[ym]||[];}
+
+function isOff(d){
+  if((folgas[ym]||[]).indexOf(d)>=0)return true;
+  if((exc[ym]||[]).indexOf(d)>=0)return false;
+  return fsem.indexOf(wd(ym,d))>=0;
+}
+function setOff(d,want){
+  var o=(folgas[ym]||[]).filter(function(x){return x!==d;}),t=(exc[ym]||[]).filter(function(x){return x!==d;});
+  var padrao=fsem.indexOf(wd(ym,d))>=0;
+  if(want&&!padrao)o.push(d);
+  if(!want&&padrao)t.push(d);
+  folgas[ym]=o;exc[ym]=t;
+}
+
+function gerarFixas(){
+  if(!user||ym<agora())return;
+  var tem=doMes().map(function(c){return c.nome;}),modelo={},novos=0;
+  dados.forEach(function(c){if(c.mes<ym&&(!modelo[c.nome]||modelo[c.nome].mes<c.mes))modelo[c.nome]=c;});
+  Object.keys(modelo).forEach(function(n){
+    var c=modelo[n];
+    if(!n||!c.fixa||tem.indexOf(n)>=0||rem[ym+"|"+n])return;
+    dados.push({id:id(),mes:ym,nome:n,dia:c.dia,valor:c.valor,fixa:true,pago:false});novos++;
+  });
+  if(novos)salvar();
+}
 
 function plano(){
-  var N=nDias(ym),off=offs(),bills=doMes(),info=[],rows=[],d,i;
+  var N=nDias(ym),h=agora(),hoje=new Date().getDate(),d,g=ganhos[ym]||{};
+  var ini=ym<h?N+1:(ym===h?hoje:1),feito=0,pagas=0,info=[],rows=[];
+  for(d=1;d<ini;d++)feito+=g[d]||0;
+  var bills=doMes();
+  bills.forEach(function(c){if(c.pago)pagas+=c.valor;});
+  var pool=Math.max(0,feito-pagas);
   bills.forEach(function(c){
-    var D=c.dia>0?Math.min(c.dia,N):0,n=0;
-    for(d=1;d<=D;d++)if(off.indexOf(d)<0)n++;
-    info.push({c:c,D:D,n:n,por:n?Math.ceil(c.valor*100/n-1e-9)/100:0});
+    if(c.pago)return;
+    var D=c.dia>0?Math.min(c.dia,N):0,use=Math.min(pool,c.valor),n=0,rest;
+    pool-=use;rest=c.valor-use;
+    for(d=ini;d<=D;d++)if(!isOff(d))n++;
+    info.push({c:c,D:D,rest:rest,n:n,por:n?Math.ceil(rest*100/n-1e-9)/100:0});
   });
   for(d=1;d<=N;d++){
-    var isOff=off.indexOf(d)>=0,cells=[],tot=0;
-    for(i=0;i<info.length;i++){
-      var v=(!isOff&&d<=info[i].D)?info[i].por:0;
-      cells.push(v);tot+=v;
-    }
-    rows.push({d:d,off:isOff,cells:cells,tot:tot});
+    var off=isOff(d),cells=[],tot=0;
+    info.forEach(function(x){var v=(d>=ini&&!off&&d<=x.D)?x.por:0;cells.push(v);tot+=v;});
+    rows.push({d:d,off:off,cells:cells,tot:tot,fiz:g[d]||0,pas:d<ini});
   }
-  return {N:N,info:info,rows:rows};
+  return {N:N,ini:ini,info:info,rows:rows};
 }
-
-function grade(foco){
-  var p=plano(),box=document.getElementById("grade"),i,h="",avisos=[];
-  if(!p.info.length){box.innerHTML='<div class="vazio">Adicione contas acima para ver a meta de cada dia.</div>';resumo(p);document.getElementById("aviso").textContent="";return;}
-  h+='<table><thead><tr><th class="s1">Folga · dia</th>';
-  p.info.forEach(function(x){
-    var ruim=x.D===0||x.n===0;
-    if(x.D===0)avisos.push((x.c.nome||"Conta sem nome")+": informe o dia do vencimento.");
-    else if(x.n===0)avisos.push((x.c.nome||"Conta sem nome")+": todos os dias até o vencimento estão de folga.");
-    h+='<th'+(ruim?' class="al"':'')+'><b>'+esc(x.c.nome||"Sem nome")+'</b><span class="inf">'+(x.D?'até dia '+x.D+' · ':'')+fmt(x.c.valor)+'</span></th>';
-  });
-  h+='<th class="s2">Total do dia</th></tr></thead><tbody>';
-  var hoje=new Date(),eHoje=ym===agora()?hoje.getDate():0;
-  p.rows.forEach(function(r){
-    h+='<tr class="'+(r.off?'off ':'')+(r.d===eHoje?'hoje':'')+'"><td class="s1"><label><input type="checkbox" data-d="'+r.d+'"'+(r.off?' checked':'')+' aria-label="Folga no dia '+r.d+'"><span><b>'+r.d+'</b> '+sem(ym,r.d)+'</span></label></td>';
-    r.cells.forEach(function(v){h+='<td>'+(v?fmt(v):"–")+'</td>';});
-    h+='<td class="s2">'+(r.tot?fmt(r.tot):"–")+'</td></tr>';
-  });
-  h+='</tbody></table>';
-  box.innerHTML=h;
-  box.querySelectorAll("input[type=checkbox]").forEach(function(cb){
-    cb.onchange=function(){
-      var d=+cb.dataset.d,a=offs().slice(),k=a.indexOf(d);
-      if(cb.checked&&k<0)a.push(d);if(!cb.checked&&k>=0)a.splice(k,1);
-      folgas[ym]=a;salvar();grade(d);
-    };
-  });
-  if(foco){var el=box.querySelector('input[data-d="'+foco+'"]');if(el)el.focus();}
-  document.getElementById("aviso").textContent=avisos.join(" ");
-  resumo(p);
-}
-function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
 
 function resumo(p){
-  var total=0,trab=0;
-  doMes().forEach(function(c){total+=c.valor;});
-  p.rows.forEach(function(r){if(!r.off)trab++;});
-  document.getElementById("totalContas").textContent=brl(total);
-  document.getElementById("diasTrab").textContent=trab;
-  var el=document.getElementById("metaHoje"),lbl=document.getElementById("metaLbl");
+  var tot=0,dt=0,jun=0,g=ganhos[ym]||{};
+  doMes().forEach(function(c){if(!c.pago)tot+=c.valor;});
+  Object.keys(g).forEach(function(k){jun+=g[k];});
+  p.rows.forEach(function(r){if(!r.off)dt++;});
+  $("totalContas").textContent=brl(tot);$("juntado").textContent=brl(jun);$("diasTrab").textContent=dt;
+  var el=$("metaHoje"),lbl=$("metaLbl");
   if(ym===agora()){
     var r=p.rows[new Date().getDate()-1];
     el.textContent=r.off?"Folga":brl(r.tot);
-    lbl.textContent=r.off?"hoje é dia de folga":"meta de hoje";
+    lbl.textContent=r.off?"hoje é dia de folga":"meta de hoje"+(r.fiz?" · faltam "+brl(Math.max(0,r.tot-r.fiz)):"");
   }else{el.textContent="–";lbl.textContent="meta de hoje (só no mês atual)";}
+}
+
+function grade(){
+  var p=plano(),box=$("grade"),h="",av=[];
+  resumo(p);
+  if(!doMes().length){box.innerHTML='<div class="vazio">Adicione contas acima para ver a meta de cada dia.</div>';$("aviso").textContent="";return;}
+  h+='<table><thead><tr><th class="s1">Folga · dia</th><th>Fiz (R$)</th>';
+  p.info.forEach(function(x){
+    var nm=x.c.nome||"Conta sem nome",ruim=false;
+    if(x.D===0){ruim=true;av.push(nm+": informe o dia do vencimento.");}
+    else if(x.rest>0&&x.n===0){ruim=true;av.push(x.D<p.ini?nm+": venceu e ainda faltam "+brl(x.rest)+".":nm+": todos os dias até o vencimento estão de folga.");}
+    h+='<th'+(ruim?' class="al"':'')+'><b>'+esc(x.c.nome||"Sem nome")+'</b><span class="inf">'+(x.D?'até dia '+x.D+' · ':'')+(x.rest<x.c.valor?'falta '+fmt(x.rest)+' de ':'')+fmt(x.c.valor)+'</span></th>';
+  });
+  h+='<th class="s2">Meta do dia</th></tr></thead><tbody>';
+  var eh=ym===agora()?new Date().getDate():0;
+  p.rows.forEach(function(r){
+    h+='<tr class="'+(r.off?'off ':'')+(r.pas?'pas ':'')+(r.d===eh?'hoje':'')+'"><td class="s1"><label><input type="checkbox" data-d="'+r.d+'"'+(r.off?' checked':'')+' aria-label="Folga no dia '+r.d+'"><span><b>'+r.d+'</b> '+DS[wd(ym,r.d)]+'</span></label></td>';
+    h+='<td class="f"><input type="text" inputmode="decimal" data-f="'+r.d+'" value="'+fmt(r.fiz)+'" placeholder="0,00" aria-label="Quanto fez no dia '+r.d+'"></td>';
+    r.cells.forEach(function(v){h+='<td>'+(v?fmt(v):"–")+'</td>';});
+    h+='<td class="s2">'+(r.tot?fmt(r.tot):"–")+'</td></tr>';
+  });
+  box.innerHTML=h+'</tbody></table>';
+  box.querySelectorAll("input[data-d]").forEach(function(cb){
+    cb.onchange=function(){setOff(+cb.dataset.d,cb.checked);salvar();grade();var e=box.querySelector('input[data-d="'+cb.dataset.d+'"]');if(e)e.focus();};
+  });
+  box.querySelectorAll("input[data-f]").forEach(function(inp){
+    inp.onchange=function(){
+      var d=inp.dataset.f,v=num(inp.value);
+      ganhos[ym]=ganhos[ym]||{};
+      if(v)ganhos[ym][d]=v;else delete ganhos[ym][d];
+      salvar();grade();
+    };
+  });
+  $("aviso").textContent=av.join(" ");
+}
+
+function desenharSemana(){
+  var el=$("semana");
+  el.innerHTML='<span>Folga fixa toda:</span>'+DS.map(function(n,i){return '<label><input type="checkbox" data-w="'+i+'"'+(fsem.indexOf(i)>=0?' checked':'')+'> '+n+'</label>';}).join("");
+  el.querySelectorAll("input").forEach(function(cb){
+    cb.onchange=function(){var w=+cb.dataset.w,k=fsem.indexOf(w);if(cb.checked&&k<0)fsem.push(w);if(!cb.checked&&k>=0)fsem.splice(k,1);salvar();grade();};
+  });
 }
 
 function tam(el,min){el.size=Math.max(min,el.value.length+1);}
 var linhas={};
 function ordenar(){
-  var l=doMes(),corpo=document.getElementById("corpo"),mudou=false;
+  var l=doMes(),corpo=$("corpo"),mudou=false;
   l.forEach(function(c,i){if(corpo.children[i]!==linhas[c.id])mudou=true;});
   if(!mudou)return;
   var a=document.activeElement;
@@ -227,72 +290,101 @@ function ordenar(){
   if(a&&a!==document.body&&document.body.contains(a))a.focus();
 }
 function lista(){
-  document.getElementById("mes").textContent=nomeMes(ym);
-  var corpo=document.getElementById("corpo"),l=doMes();
+  $("mes").textContent=nomeMes(ym);
+  gerarFixas();
+  var corpo=$("corpo"),l=doMes();
   corpo.innerHTML="";linhas={};
-  document.getElementById("vazio").hidden=l.length>0;
+  $("vazio").hidden=l.length>0;
   l.forEach(function(c){
     var tr=document.createElement("tr");linhas[c.id]=tr;
     tr.addEventListener("focusout",function(e){if(!tr.contains(e.relatedTarget))ordenar();});
+    tr.className=c.pago?"paga":"";
     tr.innerHTML='<td><input type="text" aria-label="Nome da conta" placeholder="Nome da conta"></td>'+
       '<td class="d"><input type="number" min="1" max="31" aria-label="Dia do vencimento" placeholder="dia"></td>'+
       '<td class="v"><input type="text" inputmode="decimal" aria-label="Valor" placeholder="0,00"></td>'+
+      '<td class="c"><input type="checkbox" aria-label="Conta fixa, repete todo mês"></td>'+
+      '<td class="c"><input type="checkbox" aria-label="Conta paga"></td>'+
       '<td class="x"><button class="del" aria-label="Remover conta">×</button></td>';
     var i=tr.querySelectorAll("input");
-    i[0].value=c.nome;i[1].value=c.dia||"";i[2].value=fmt(c.valor);tam(i[0],14);tam(i[2],9);
+    i[0].value=c.nome;i[1].value=c.dia||"";i[2].value=fmt(c.valor);i[3].checked=!!c.fixa;i[4].checked=!!c.pago;tam(i[0],14);tam(i[2],9);
     i[0].oninput=function(){c.nome=i[0].value;tam(i[0],14);salvar();grade();};
     i[1].oninput=function(){c.dia=parseInt(i[1].value,10)||0;salvar();grade();};
     i[2].oninput=function(){c.valor=num(i[2].value);tam(i[2],9);salvar();grade();};
     i[2].onblur=function(){i[2].value=fmt(c.valor);tam(i[2],9);};
-    tr.querySelector(".del").onclick=function(){dados=dados.filter(function(x){return x!==c;});salvar();lista();};
+    i[3].onchange=function(){c.fixa=i[3].checked;salvar();};
+    i[4].onchange=function(){c.pago=i[4].checked;tr.className=c.pago?"paga":"";salvar();grade();};
+    tr.querySelector(".del").onclick=function(){if(c.fixa)rem[ym+"|"+c.nome]=1;dados=dados.filter(function(x){return x!==c;});salvar();lista();};
     corpo.appendChild(tr);
   });
+  desenharSemana();
   grade();
 }
-document.getElementById("ant").onclick=function(){ym=mover(ym,-1);lista();};
-document.getElementById("prox").onclick=function(){ym=mover(ym,1);lista();};
-document.getElementById("hoje").onclick=function(){ym=agora();lista();};
-document.getElementById("add").onclick=function(){
-  dados.push({id:id(),mes:ym,nome:"",dia:0,valor:0});salvar();lista();
+$("ant").onclick=function(){ym=mover(ym,-1);lista();};
+$("prox").onclick=function(){ym=mover(ym,1);lista();};
+$("hoje").onclick=function(){ym=agora();lista();};
+$("add").onclick=function(){
+  dados.push({id:id(),mes:ym,nome:"",dia:0,valor:0,fixa:false,pago:false});salvar();lista();
   var n=document.querySelectorAll("#corpo tr:last-child input")[0];if(n)n.focus();
 };
-document.getElementById("copiar").onclick=function(){
+$("copiar").onclick=function(){
   var ant=mover(ym,-1),jaTem=doMes().map(function(c){return c.nome;});
-  var novas=dados.filter(function(c){return c.mes===ant&&jaTem.indexOf(c.nome)<0;}).map(function(c){return {id:id(),mes:ym,nome:c.nome,dia:c.dia,valor:c.valor};});
+  var novas=dados.filter(function(c){return c.mes===ant&&jaTem.indexOf(c.nome)<0;}).map(function(c){return {id:id(),mes:ym,nome:c.nome,dia:c.dia,valor:c.valor,fixa:!!c.fixa,pago:false};});
   dados=dados.concat(novas);salvar();lista();
 };
+
 function traduz(m){
   if(/Invalid login/i.test(m))return "E-mail ou senha incorretos.";
   if(/already registered/i.test(m))return "Este e-mail já tem conta. Use Entrar.";
   if(/at least 6/i.test(m))return "A senha precisa ter pelo menos 6 caracteres.";
   if(/not confirmed/i.test(m))return "Confirme seu e-mail antes de entrar.";
+  if(/rate limit/i.test(m))return "Muitas tentativas. Espere alguns minutos e tente de novo.";
   return m;
 }
-var msg=document.getElementById("msg");
-document.getElementById("fl").onsubmit=async function(ev){
+var msg=$("msg");
+$("fl").onsubmit=async function(ev){
   ev.preventDefault();msg.textContent="";
-  var r=await sb.auth.signInWithPassword({email:document.getElementById("email").value.trim(),password:document.getElementById("senha").value});
+  var r=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("senha").value});
   if(r.error)msg.textContent=traduz(r.error.message);
 };
-document.getElementById("criar").onclick=async function(){
+$("criar").onclick=async function(){
   msg.textContent="";
-  var e=document.getElementById("email").value.trim(),s=document.getElementById("senha").value;
+  var e=$("email").value.trim(),s=$("senha").value;
   if(!e||s.length<6){msg.textContent="Informe um e-mail e uma senha de pelo menos 6 caracteres.";return;}
   var r=await sb.auth.signUp({email:e,password:s});
   if(r.error){msg.textContent=traduz(r.error.message);return;}
   if(!r.data.session)msg.textContent="Conta criada. Abra o e-mail de confirmação que enviamos e depois clique em Entrar.";
 };
-document.getElementById("sair").onclick=function(){sb.auth.signOut();};
+$("esqueci").onclick=async function(){
+  msg.textContent="";
+  var e=$("email").value.trim();
+  if(!e){msg.textContent="Digite seu e-mail acima e clique de novo em Esqueci minha senha.";return;}
+  var r=await sb.auth.resetPasswordForEmail(e);
+  msg.textContent=r.error?traduz(r.error.message):"Enviamos um link para criar uma nova senha. Olhe também o spam.";
+};
+$("salvarSenha").onclick=async function(){
+  var s=$("senha2").value,m=$("msg2");
+  if(s.length<6){m.textContent="A senha precisa ter pelo menos 6 caracteres.";return;}
+  var r=await sb.auth.updateUser({password:s});
+  if(r.error){m.textContent=traduz(r.error.message);return;}
+  recuperando=false;$("senha2").value="";m.textContent="";mostrar();carregar();
+};
+$("sair").onclick=function(){sb.auth.signOut();};
+function mostrar(){
+  $("login").hidden=!!user;
+  $("nova").hidden=!recuperando;
+  $("app").hidden=!user||recuperando;
+}
 sb.auth.onAuthStateChange(function(ev,sess){
+  if(ev==="PASSWORD_RECOVERY"){recuperando=true;user=sess.user;mostrar();return;}
   var novo=sess?sess.user.id:null,atual=user?user.id:null;
   user=sess?sess.user:null;
   if(novo===atual)return;
-  document.getElementById("login").hidden=!!user;
-  document.getElementById("app").hidden=!user;
-  if(user){document.getElementById("quem").textContent=user.email;setTimeout(carregar,0);}
-  else{dados=[];folgas={};document.getElementById("senha").value="";}
+  if(!user){dados=[];folgas={};ganhos={};exc={};fsem=[];rem={};$("senha").value="";mostrar();return;}
+  $("quem").textContent=user.email;
+  mostrar();setTimeout(carregar,0);
 });
-document.addEventListener("visibilitychange",function(){if(!document.hidden&&user&&!pendente)carregar();});
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&user&&!pendente&&!recuperando)carregar();});
+lista();
 })();
 </script>
 </body>
