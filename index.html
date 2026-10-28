@@ -109,10 +109,17 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
   .topo,.nav,.sech,#contasBox,.semana,.export,.link{display:none!important}
   body{background:#fff}
   main{max-width:none;padding:0}
-  #grade{width:100%;overflow:visible}
+  #grade{width:100%;overflow:visible;max-height:none!important}
   #grade table{font-size:.7rem}
-  #grade .s1,#grade .s2,#grade .s3{position:static}
+  #grade .s1,#grade .s2,#grade .s3,#grade th{position:static!important}
 }
+#grade{max-height:calc(100vh - 110px);max-height:calc(100dvh - 110px)}
+#grade th{position:sticky;top:0;z-index:2;box-shadow:inset 0 -1px 0 var(--line)}
+#grade th.s1,#grade th.s2,#grade th.s3{z-index:3}
+#grade th.cc{box-shadow:inset 0 5px 0 var(--cc),inset 0 -1px 0 var(--line)}
+#grade tbody tr td.cc{background-image:linear-gradient(color-mix(in srgb,var(--cc) 13%,transparent),color-mix(in srgb,var(--cc) 13%,transparent))}
+#lista input[type=color]{width:26px;height:22px;padding:0;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
 </style>
 <script>try{var tm=localStorage.getItem("tema");if(tm==="light"||tm==="dark")document.documentElement.setAttribute("data-theme",tm);}catch(e){}</script>
 </head>
@@ -137,7 +144,7 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 </section>
 <main id="app" hidden>
 <h1>Meta diária das contas</h1>
-<div class="topo"><span id="quem"></span><span id="sync"></span><span class="tema" role="group" aria-label="Tema da tela"><button data-t="light" aria-pressed="false">Claro</button><button data-t="dark" aria-pressed="false">Escuro</button><button data-t="auto" aria-pressed="true" title="Usa o mesmo tema do aparelho">Automático</button></span><button id="sair">Sair</button></div>
+<div class="topo"><span id="quem"></span><span id="sync"></span><button id="desfazer" disabled title="Desfaz a última alteração (Ctrl+Z)">Desfazer</button><span class="tema" role="group" aria-label="Tema da tela"><button data-t="light" aria-pressed="false">Claro</button><button data-t="dark" aria-pressed="false">Escuro</button><button data-t="auto" aria-pressed="true" title="Usa o mesmo tema do aparelho">Automático</button></span><button id="sair">Sair</button></div>
 <div class="nav">
   <button id="ant" aria-label="Mês anterior">‹</button>
   <span class="mes" id="mes"></span>
@@ -157,7 +164,7 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 <p class="dica">Informe o nome, o dia do vencimento e o valor. Marque Fixa nas contas que se repetem todo mês e Paga quando pagar.</p>
 <div class="box" id="lista">
   <table>
-    <thead><tr><th>Conta</th><th>Vence no dia</th><th>Valor (R$)</th><th>Fixa</th><th>Paga</th><th></th></tr></thead>
+    <thead><tr><th>Conta</th><th>Vence no dia</th><th>Valor (R$)</th><th>Fixa</th><th>Paga</th><th>Cor</th><th></th></tr></thead>
     <tbody id="corpo"></tbody>
   </table>
   <div class="vazio" id="vazio" hidden>Nenhuma conta neste mês. Adicione a primeira abaixo.</div>
@@ -192,11 +199,19 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 <script>
 (function(){
 var C=window.CONFIG||{},sb=window.supabase.createClient(C.url||"COLE_AQUI_A_URL_DO_PROJETO",C.key||"COLE_AQUI_A_CHAVE_ANON");
-var user=null,dados=[],folgas={},feitos={},exc={},fsem=[],rem={},ym=agora(),tmr=null,pendente=false,recuperando=false;
+var user=null,dados=[],folgas={},feitos={},exc={},fsem=[],rem={},ym=agora(),tmr=null,pendente=false,recuperando=false,ultimo="",hist=[],tUlt=0,ultTipo="";
 var DS=["dom","seg","ter","qua","qui","sex","sáb"];
 function $(i){return document.getElementById(i);}
 function status(x){$("sync").textContent=x;}
-function salvar(){if(!user)return;pendente=true;clearTimeout(tmr);status("Salvando…");tmr=setTimeout(enviar,500);}
+function estado(){return JSON.stringify({dados:dados,feitos:feitos,exc:exc,fsem:fsem,rem:rem,folgas:folgas});}
+function atualizarBtn(){var b=$("desfazer");if(b)b.disabled=!hist.length;}
+function salvar(tipo){
+  if(!user)return;
+  var ag=Date.now();
+  if(tipo!=="auto"&&!(tipo==="txt"&&ultTipo==="txt"&&ag-tUlt<1500)){if(ultimo)hist.push(ultimo);if(hist.length>30)hist.shift();}
+  tUlt=ag;ultTipo=tipo||"";ultimo=estado();atualizarBtn();
+  pendente=true;clearTimeout(tmr);status("Salvando…");tmr=setTimeout(enviar,500);
+}
 async function enviar(){
   var r=await sb.from("planilha").upsert({user_id:user.id,dados:{v:2,contas:dados,feitos:feitos,exc:exc,fsem:fsem,rem:rem},folgas:folgas,updated_at:new Date().toISOString()});
   if(r.error){status("Erro ao salvar. Verifique a conexão.");return;}
@@ -208,6 +223,7 @@ async function carregar(){
   var d=r.data&&r.data.dados;if(Array.isArray(d))d={contas:d};d=d||{};
   dados=d.contas||[];feitos=d.feitos||{};exc=d.exc||{};fsem=d.fsem||[];rem=d.rem||{};
   folgas=(r.data&&r.data.folgas)||{};
+  hist=[];ultimo=estado();atualizarBtn();
   lista();status("Salvo");
 }
 function agora(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
@@ -235,6 +251,9 @@ function setOff(d,want){
   folgas[ym]=o;exc[ym]=t;
 }
 
+var PAL=["#2f5bea","#1e8e5a","#e08a1e","#c2412d","#8a4fd6","#0e9aa7","#d6478b","#6b7280"];
+function corDe(c){if(c.cor)return c.cor;var h=0,s=c.id||"",i;for(i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return PAL[h%PAL.length];}
+function corNova(){var u=doMes().map(corDe),i;for(i=0;i<PAL.length;i++)if(u.indexOf(PAL[i])<0)return PAL[i];return PAL[doMes().length%PAL.length];}
 function gerarFixas(){
   if(!user||ym<agora())return;
   var tem=doMes().map(function(c){return c.nome;}),modelo={},novos=0;
@@ -242,9 +261,9 @@ function gerarFixas(){
   Object.keys(modelo).forEach(function(n){
     var c=modelo[n];
     if(!n||!c.fixa||tem.indexOf(n)>=0||rem[ym+"|"+n])return;
-    dados.push({id:id(),mes:ym,nome:n,dia:c.dia,valor:c.valor,fixa:true,pago:false});novos++;
+    dados.push({id:id(),mes:ym,nome:n,dia:c.dia,valor:c.valor,fixa:true,pago:false,cor:corDe(c)});novos++;
   });
-  if(novos)salvar();
+  if(novos)salvar("auto");
 }
 
 function plano(){
@@ -303,17 +322,17 @@ function grade(){
     if(x.D===0){ruim=true;av.push(nm+": informe o dia do vencimento.");}
     else if(x.rest>0&&x.n===0){ruim=true;av.push(x.D<p.ini?nm+": venceu e ainda faltam "+brl(x.rest)+".":nm+": todos os dias até o vencimento estão de folga.");}
     var l1=x.D?(x.D<p.ini?'venceu dia ':'vence dia ')+x.D:'sem vencimento',l2=x.rest<=0?'guardado':(x.rest<x.c.valor?'falta '+fmt(x.rest):'');
-    h+='<th'+(ruim?' class="al'+(x.atr?' atr':'')+'"':'')+'><b>'+esc(x.c.nome||"Sem nome")+'</b><span class="inf">'+l1+'</span>'+(l2?'<span class="inf">'+l2+'</span>':'')+'</th>';
+    h+='<th class="cc'+(ruim?' al':'')+(x.atr?' atr':'')+'" style="--cc:'+corDe(x.c)+'"><b>'+esc(x.c.nome||"Sem nome")+'</b><span class="inf">'+l1+'</span>'+(l2?'<span class="inf">'+l2+'</span>':'')+'</th>';
   });
   h+='<th class="s2">Meta do dia</th><th class="s3">Meta semanal</th></tr></thead><tbody>';
   var eh=ym===agora()?new Date().getDate():0;
   p.rows.forEach(function(r){
     h+='<tr class="'+(r.off?'off ':'')+(r.pas?'pas ':'')+(r.d===eh?'hoje':'')+'"><td class="s1"><label><input type="checkbox" data-o="'+r.d+'"'+(r.off?' checked':'')+' aria-label="Folga no dia '+r.d+'"><span><b>'+r.d+'</b> '+DS[wd(ym,r.d)]+'</span></label></td>';
     r.cells.forEach(function(c,i){
-      var x=p.info[i],ac=x.atr?' atr':'';
-      if(c.m||c.v)h+='<td class="k'+(c.m?' ok':'')+ac+'"><label><input type="checkbox" data-b="'+p.info[i].c.id+'" data-k="'+r.d+'"'+(c.m?' checked':'')+' aria-label="Já guardei esta parte de '+esc(p.info[i].c.nome||"conta")+' no dia '+r.d+'"><span>'+fmt(c.m||c.v)+'</span></label></td>';
+      var x=p.info[i],ac=x.atr?' atr':' cc',st=x.atr?'':' style="--cc:'+corDe(x.c)+'"';
+      if(c.m||c.v)h+='<td class="k'+(c.m?' ok':'')+ac+'"'+st+'><label><input type="checkbox" data-b="'+p.info[i].c.id+'" data-k="'+r.d+'"'+(c.m?' checked':'')+' aria-label="Já guardei esta parte de '+esc(p.info[i].c.nome||"conta")+' no dia '+r.d+'"><span>'+fmt(c.m||c.v)+'</span></label></td>';
       else if(x.atr&&r.d===x.D)h+='<td class="atr"><b>'+fmt(x.rest)+'</b></td>';
-      else h+='<td'+(x.atr?' class="atr"':'')+'>–</td>';
+      else h+='<td class="'+ac.trim()+'"'+st+'>–</td>';
     });
     h+='<td class="s2'+(r.at?' atr':'')+'">'+((r.tot+r.at)?fmt(r.tot+r.at):"–")+'</td>'+semCell(r)+'</tr>';
   });
@@ -381,15 +400,17 @@ function lista(){
       '<td class="v"><input type="text" inputmode="decimal" aria-label="Valor" placeholder="0,00"></td>'+
       '<td class="c"><input type="checkbox" aria-label="Conta fixa, repete todo mês"></td>'+
       '<td class="c"><input type="checkbox" aria-label="Conta paga"></td>'+
+      '<td class="c"><input type="color" aria-label="Cor da conta"></td>'+
       '<td class="x"><button class="del" aria-label="Remover conta">×</button></td>';
     var i=tr.querySelectorAll("input");
-    i[0].value=c.nome;i[1].value=c.dia||"";i[2].value=fmt(c.valor);i[3].checked=!!c.fixa;i[4].checked=!!c.pago;tam(i[0],14);tam(i[2],9);
-    i[0].oninput=function(){c.nome=i[0].value;tam(i[0],14);salvar();grade();};
-    i[1].oninput=function(){c.dia=parseInt(i[1].value,10)||0;salvar();grade();};
-    i[2].oninput=function(){c.valor=num(i[2].value);tam(i[2],9);salvar();grade();};
+    i[0].value=c.nome;i[1].value=c.dia||"";i[2].value=fmt(c.valor);i[3].checked=!!c.fixa;i[4].checked=!!c.pago;i[5].value=corDe(c);tam(i[0],14);tam(i[2],9);
+    i[0].oninput=function(){c.nome=i[0].value;tam(i[0],14);salvar("txt");grade();};
+    i[1].oninput=function(){c.dia=parseInt(i[1].value,10)||0;salvar("txt");grade();};
+    i[2].oninput=function(){c.valor=num(i[2].value);tam(i[2],9);salvar("txt");grade();};
     i[2].onblur=function(){i[2].value=fmt(c.valor);tam(i[2],9);};
     i[3].onchange=function(){c.fixa=i[3].checked;salvar();};
     i[4].onchange=function(){c.pago=i[4].checked;tr.className=c.pago?"paga":"";salvar();grade();};
+    i[5].oninput=function(){c.cor=i[5].value;salvar("txt");grade();};
     tr.querySelector(".del").onclick=function(){if(c.fixa)rem[ym+"|"+c.nome]=1;dados=dados.filter(function(x){return x!==c;});salvar();lista();};
     corpo.appendChild(tr);
   });
@@ -400,12 +421,12 @@ $("ant").onclick=function(){ym=mover(ym,-1);lista();};
 $("prox").onclick=function(){ym=mover(ym,1);lista();};
 $("hoje").onclick=function(){ym=agora();lista();};
 $("add").onclick=function(){
-  dados.push({id:id(),mes:ym,nome:"",dia:0,valor:0,fixa:false,pago:false});salvar();lista();
+  dados.push({id:id(),mes:ym,nome:"",dia:0,valor:0,fixa:false,pago:false,cor:corNova()});salvar();lista();
   var n=document.querySelectorAll("#corpo tr:last-child input")[0];if(n)n.focus();
 };
 $("copiar").onclick=function(){
   var ant=mover(ym,-1),jaTem=doMes().map(function(c){return c.nome;});
-  var novas=dados.filter(function(c){return c.mes===ant&&jaTem.indexOf(c.nome)<0;}).map(function(c){return {id:id(),mes:ym,nome:c.nome,dia:c.dia,valor:c.valor,fixa:!!c.fixa,pago:false};});
+  var novas=dados.filter(function(c){return c.mes===ant&&jaTem.indexOf(c.nome)<0;}).map(function(c){return {id:id(),mes:ym,nome:c.nome,dia:c.dia,valor:c.valor,fixa:!!c.fixa,pago:false,cor:corDe(c)};});
   dados=dados.concat(novas);salvar();lista();
 };
 
@@ -515,6 +536,20 @@ var dip=null;
 window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();dip=e;$("instalar").hidden=false;});
 $("instalar").onclick=async function(){if(!dip)return;dip.prompt();await dip.userChoice;dip=null;$("instalar").hidden=true;};
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(function(){});
+function desfazerAcao(){
+  if(!hist.length)return;
+  var s;try{s=JSON.parse(hist.pop());}catch(e){atualizarBtn();return;}
+  dados=s.dados||[];feitos=s.feitos||{};exc=s.exc||{};fsem=s.fsem||[];rem=s.rem||{};folgas=s.folgas||{};
+  salvar("auto");lista();
+}
+$("desfazer").onclick=desfazerAcao;
+document.addEventListener("keydown",function(e){
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key.toLowerCase()==="z"){
+    var a=document.activeElement;
+    if(a&&a.tagName==="INPUT"&&(a.type==="text"||a.type==="number"||a.type==="email"||a.type==="password"))return;
+    e.preventDefault();desfazerAcao();
+  }
+});
 lista();
 })();
 </script>
