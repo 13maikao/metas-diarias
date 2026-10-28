@@ -125,7 +125,7 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 (function(){
-var SUPABASE_URL="https://lbqvzupaijhbsdzcsedd.supabase.co/rest/v1/",SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxicXZ6dXBhaWpoYnNkemNzZWRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNTUwMzEsImV4cCI6MjEwODczMTAzMX0.OcQ8tc9AcbvVE3xPU-SsN2NBI1qucEXdMvVFPkhX6mQ";
+var SUPABASE_URL="https://lbqvzupaijhbsdzcsedd.supabase.co",SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxicXZ6dXBhaWpoYnNkemNzZWRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNTUwMzEsImV4cCI6MjEwODczMTAzMX0.OcQ8tc9AcbvVE3xPU-SsN2NBI1qucEXdMvVFPkhX6mQ";
 var sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY),user=null,dados=[],folgas={},ym=agora(),tmr=null,pendente=false;
 function status(x){document.getElementById("sync").textContent=x;}
 function salvar(){pendente=true;clearTimeout(tmr);status("Salvando…");tmr=setTimeout(enviar,500);}
