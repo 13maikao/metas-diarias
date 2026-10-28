@@ -85,7 +85,17 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 #grade td.k.ok span{text-decoration:line-through;color:var(--muted)}
 #grade tr.pas td{color:var(--muted)}
 #grade th.atr,#grade tbody tr td.atr{background:color-mix(in srgb,var(--bad) 13%,var(--panel));color:var(--bad)}
+.sech{display:flex;align-items:center;gap:12px;margin:28px 0 4px}
+.sech h2{margin:0}
+.sech button{padding:3px 10px;font-size:.8rem}
+.tema{display:inline-flex}
+.tema button{border-radius:0;padding:4px 10px;font-size:.85rem}
+.tema button:first-child{border-radius:8px 0 0 8px}
+.tema button:last-child{border-radius:0 8px 8px 0}
+.tema button+button{margin-left:-1px}
+.tema button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--bg)}
 </style>
+<script>try{var tm=localStorage.getItem("tema");if(tm==="light"||tm==="dark")document.documentElement.setAttribute("data-theme",tm);}catch(e){}</script>
 </head>
 <body>
 <section id="login" class="login">
@@ -108,7 +118,7 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 </section>
 <main id="app" hidden>
 <h1>Meta diária das contas</h1>
-<div class="topo"><span id="quem"></span><span id="sync"></span><button id="sair">Sair</button></div>
+<div class="topo"><span id="quem"></span><span id="sync"></span><span class="tema" role="group" aria-label="Tema da tela"><button data-t="light" aria-pressed="false">Claro</button><button data-t="dark" aria-pressed="false">Escuro</button><button data-t="auto" aria-pressed="true" title="Usa o mesmo tema do aparelho">Automático</button></span><button id="sair">Sair</button></div>
 <div class="nav">
   <button id="ant" aria-label="Mês anterior">‹</button>
   <span class="mes" id="mes"></span>
@@ -118,11 +128,13 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 <div class="resumo">
   <div class="big"><span id="metaHoje">–</span><small id="metaLbl">meta de hoje</small></div>
   <div class="peq"><span id="totalContas">R$ 0,00</span><small>falta pagar no mês</small></div>
+  <div class="peq"><span id="totalGeral">R$ 0,00</span><small>total das contas</small></div>
   <div class="peq"><span id="juntado">R$ 0,00</span><small>já guardado no mês</small></div>
   <div class="peq"><span id="diasTrab">0</span><small>dias de trabalho no mês</small></div>
 </div>
 
-<h2>Contas do mês</h2>
+<div class="sech"><h2>Contas do mês</h2><button id="minimizar" aria-expanded="true" aria-controls="contasBox">Minimizar</button></div>
+<div id="contasBox">
 <p class="dica">Informe o nome, o dia do vencimento e o valor. Marque Fixa nas contas que se repetem todo mês e Paga quando pagar.</p>
 <div class="box" id="lista">
   <table>
@@ -134,6 +146,8 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 <div class="acoes">
   <button class="prim" id="add">Adicionar conta</button>
   <button id="copiar">Copiar contas do mês anterior</button>
+</div>
+
 </div>
 
 <h2>Quanto fazer por dia</h2>
@@ -225,11 +239,11 @@ function plano(){
 }
 
 function resumo(p){
-  var tot=0,dt=0,jun=0,F=feitos[ym]||{};
-  doMes().forEach(function(c){if(!c.pago)tot+=c.valor;});
+  var tot=0,all=0,dt=0,jun=0,F=feitos[ym]||{};
+  doMes().forEach(function(c){all+=c.valor;if(!c.pago)tot+=c.valor;});
   Object.keys(F).forEach(function(b){Object.keys(F[b]).forEach(function(k){jun+=F[b][k];});});
   p.rows.forEach(function(r){if(!r.off)dt++;});
-  $("totalContas").textContent=brl(tot);$("juntado").textContent=brl(jun);$("diasTrab").textContent=dt;
+  $("totalContas").textContent=brl(tot);$("totalGeral").textContent=brl(all);$("juntado").textContent=brl(jun);$("diasTrab").textContent=dt;
   var el=$("metaHoje"),lbl=$("metaLbl");
   if(ym===agora()){
     var r=p.rows[new Date().getDate()-1];
@@ -247,7 +261,7 @@ function grade(){
     var nm=x.c.nome||"Conta sem nome",ruim=false;
     if(x.D===0){ruim=true;av.push(nm+": informe o dia do vencimento.");}
     else if(x.rest>0&&x.n===0){ruim=true;av.push(x.D<p.ini?nm+": venceu e ainda faltam "+brl(x.rest)+".":nm+": todos os dias até o vencimento estão de folga.");}
-    var l1=x.D?'vence dia '+x.D:'sem vencimento',l2=x.rest<=0?'guardado':(x.rest<x.c.valor?'falta '+fmt(x.rest):'');
+    var l1=x.D?(x.D<p.ini?'venceu dia ':'vence dia ')+x.D:'sem vencimento',l2=x.rest<=0?'guardado':(x.rest<x.c.valor?'falta '+fmt(x.rest):'');
     h+='<th'+(ruim?' class="al'+(x.atr?' atr':'')+'"':'')+'><b>'+esc(x.c.nome||"Sem nome")+'</b><span class="inf">'+l1+'</span>'+(l2?'<span class="inf">'+l2+'</span>':'')+'</th>';
   });
   h+='<th class="s2">Meta do dia</th></tr></thead><tbody>';
@@ -391,6 +405,18 @@ sb.auth.onAuthStateChange(function(ev,sess){
   mostrar();setTimeout(carregar,0);
 });
 document.addEventListener("visibilitychange",function(){if(!document.hidden&&user&&!pendente&&!recuperando)carregar();});
+function aplicarTema(x){
+  var r=document.documentElement,f=(x==="light"||x==="dark")?x:"auto";
+  if(f==="auto")r.removeAttribute("data-theme");else r.setAttribute("data-theme",f);
+  document.querySelectorAll(".tema button").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.t===f));});
+}
+var tema="auto";try{tema=localStorage.getItem("tema")||"auto";}catch(e){}
+aplicarTema(tema);
+document.querySelectorAll(".tema button").forEach(function(b){b.onclick=function(){tema=b.dataset.t;aplicarTema(tema);try{localStorage.setItem("tema",tema);}catch(e){}};});
+function aplicarMin(m){$("contasBox").hidden=m;$("minimizar").textContent=m?"Expandir":"Minimizar";$("minimizar").setAttribute("aria-expanded",String(!m));}
+var min=false;try{min=localStorage.getItem("minContas")==="1";}catch(e){}
+aplicarMin(min);
+$("minimizar").onclick=function(){min=!min;aplicarMin(min);try{localStorage.setItem("minContas",min?"1":"0");}catch(e){}};
 lista();
 })();
 </script>
