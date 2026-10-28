@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Meta diária das contas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f5;--panel:#fff;--ink:#1d2433;--muted:#667085;--line:#cbd2dd;--accent:#2f5bea;--bad:#c2412d;--head:#e3e8f0;--off:#f1f3f7;--hoje:#e6ecff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141a26;--panel:#1c2434;--ink:#e8ecf4;--muted:#98a2b8;--line:#2e394f;--accent:#7c9bff;--bad:#ff8a73;--head:#242e42;--off:#18202f;--hoje:#26325a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141a26;--panel:#1c2434;--ink:#e8ecf4;--muted:#98a2b8;--line:#2e394f;--accent:#7c9bff;--bad:#ff8a73;--head:#242e42;--off:#18202f;--hoje:#26325a;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 "Figtree",system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:980px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.4rem;margin:0 0 16px;font-weight:700}
+h2{font-size:1.05rem;margin:28px 0 4px;font-weight:700}
+p.dica{margin:0 0 10px;color:var(--muted);font-size:.9rem}
+button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:8px 14px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.nav{display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.mes{font-weight:700;font-size:1.15rem;min-width:11ch;text-align:center;text-transform:capitalize}
+.resumo{display:flex;align-items:flex-end;gap:32px;flex-wrap:wrap}
+.big{font-size:2.6rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;color:var(--accent)}
+.big small{display:block;font-size:.95rem;font-weight:500;color:var(--muted);margin-top:6px}
+.peq{font-variant-numeric:tabular-nums;font-size:1.15rem;font-weight:500}
+.peq small{display:block;font-size:.85rem;color:var(--muted)}
+.box{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+table{border-collapse:collapse;width:100%}
+th,td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:0;text-align:left}
+th:last-child,td:last-child{border-right:0}
+th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);padding:8px 10px;vertical-align:bottom}
+#lista{width:fit-content;max-width:100%}
+#lista table{width:auto;font-size:.85rem}
+#lista th{padding:4px 8px;font-size:.75rem}
+#lista input[type=text],#lista input[type=number]{border:0;background:transparent;color:inherit;font:inherit;font-size:.85rem;padding:5px 8px;outline-offset:-2px}
+#lista input[type=number]{width:calc(4ch + 18px);text-align:center;-moz-appearance:textfield}
+#lista input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+#lista td.v input{text-align:right;font-variant-numeric:tabular-nums}
+#lista td.d,#lista td.v,#lista td.x{width:1%}#lista td.x{text-align:center}
+.del{border:0;background:none;color:var(--muted);font-size:1.1rem;padding:2px 8px}
+.del:hover{color:var(--bad)}
+.vazio{padding:20px 16px;color:var(--muted);text-align:center}
+.acoes{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.prim{background:var(--accent);border-color:var(--accent);color:#fff}
+#grade{width:fit-content;max-width:100%}
+#grade table{width:auto;font-size:.82rem;line-height:1.3}
+#grade th b{display:block;color:var(--ink);font-weight:700;font-size:.8rem}
+#grade .inf{white-space:nowrap;font-weight:400}
+#grade th.al{color:var(--bad)}
+#grade td{padding:2px 8px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+#grade th{text-align:right;white-space:normal;padding:4px 8px;font-size:.72rem;line-height:1.25}
+#grade .s1{position:sticky;left:0;text-align:left;background:var(--panel);z-index:1}
+#grade th.s1{background:var(--head)}
+#grade .s2{position:sticky;right:0;background:var(--panel);font-weight:700;z-index:1;border-left:2px solid var(--line)}
+#grade th.s2{background:var(--head);color:var(--ink)}
+#grade tr.off td{background:var(--off);color:var(--muted)}
+#grade tr.off .s1,#grade tr.off .s2{background:var(--off)}
+#grade tr.hoje td,#grade tr.hoje .s1,#grade tr.hoje .s2{background:var(--hoje)}
+#grade label{display:flex;align-items:center;gap:6px;cursor:pointer}
+#grade input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent);cursor:pointer}
+#grade tfoot td{font-weight:700;background:var(--head)}
+#grade tfoot .s1,#grade tfoot .s2{background:var(--head)}
+#aviso{color:var(--bad);font-size:.9rem;margin-top:10px}
+.topo{display:flex;align-items:center;gap:12px;margin:-8px 0 14px;color:var(--muted);font-size:.85rem;flex-wrap:wrap}
+.topo button{padding:4px 10px;font-size:.85rem}
+.login{max-width:360px;margin:12vh auto 0;padding:20px 16px}
+.login h1{margin-bottom:6px}
+.login p{color:var(--muted);margin:0 0 16px;font-size:.95rem}
+.login input{width:100%;font:inherit;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);margin-bottom:10px}
+.login .row{display:flex;gap:10px}
+.login .row button{flex:1}
+#msg{color:var(--bad);font-size:.9rem;min-height:1.4em;margin:0 0 6px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<section id="login" class="login">
+  <h1>Meta diária das contas</h1>
+  <p>Entre com seu e-mail e senha, ou crie uma conta para ter a sua própria planilha.</p>
+  <form id="fl">
+    <input type="email" id="email" placeholder="E-mail" autocomplete="email" required aria-label="E-mail">
+    <input type="password" id="senha" placeholder="Senha (mínimo 6 caracteres)" autocomplete="current-password" required minlength="6" aria-label="Senha">
+    <p id="msg" role="alert"></p>
+    <div class="row"><button class="prim" type="submit">Entrar</button><button type="button" id="criar">Criar conta</button></div>
+  </form>
+</section>
+<main id="app" hidden>
+<h1>Meta diária das contas</h1>
+<div class="topo"><span id="quem"></span><span id="sync"></span><button id="sair">Sair</button></div>
+<div class="nav">
+  <button id="ant" aria-label="Mês anterior">‹</button>
+  <span class="mes" id="mes"></span>
+  <button id="prox" aria-label="Próximo mês">›</button>
+  <button id="hoje">Mês atual</button>
+</div>
+<div class="resumo">
+  <div class="big"><span id="metaHoje">–</span><small id="metaLbl">meta de hoje</small></div>
+  <div class="peq"><span id="totalContas">R$ 0,00</span><small>total das contas</small></div>
+  <div class="peq"><span id="diasTrab">0</span><small>dias de trabalho no mês</small></div>
+</div>
+
+<h2>Contas do mês</h2>
+<p class="dica">Informe o nome, o dia do vencimento e o valor de cada conta.</p>
+<div class="box" id="lista">
+  <table>
+    <thead><tr><th>Conta</th><th>Vence no dia</th><th>Valor (R$)</th><th></th></tr></thead>
+    <tbody id="corpo"></tbody>
+  </table>
+  <div class="vazio" id="vazio" hidden>Nenhuma conta neste mês. Adicione a primeira abaixo.</div>
+</div>
+<div class="acoes">
+  <button class="prim" id="add">Adicionar conta</button>
+  <button id="copiar">Copiar contas do mês anterior</button>
+</div>
+
+<h2>Quanto fazer por dia</h2>
+<p class="dica">Marque os dias de folga. Cada conta é dividida entre os dias de trabalho, do dia 1 até o vencimento.</p>
+<div class="box" id="grade"></div>
+<div id="aviso"></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(function(){
+var SUPABASE_URL="https://lbqvzupaijhbsdzcsedd.supabase.co/rest/v1/",SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxicXZ6dXBhaWpoYnNkemNzZWRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNTUwMzEsImV4cCI6MjEwODczMTAzMX0.OcQ8tc9AcbvVE3xPU-SsN2NBI1qucEXdMvVFPkhX6mQ";
+var sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY),user=null,dados=[],folgas={},ym=agora(),tmr=null,pendente=false;
+function status(x){document.getElementById("sync").textContent=x;}
+function salvar(){pendente=true;clearTimeout(tmr);status("Salvando…");tmr=setTimeout(enviar,500);}
+async function enviar(){
+  var r=await sb.from("planilha").upsert({user_id:user.id,dados:dados,folgas:folgas,updated_at:new Date().toISOString()});
+  if(r.error){status("Erro ao salvar. Verifique a conexão.");return;}
+  pendente=false;status("Salvo");
+}
+async function carregar(){
+  var r=await sb.from("planilha").select("dados,folgas").eq("user_id",user.id).maybeSingle();
+  if(r.error){status("Erro ao carregar os dados.");return;}
+  dados=(r.data&&r.data.dados)||[];folgas=(r.data&&r.data.folgas)||{};
+  lista();status("Salvo");
+}
+function agora(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
+function mover(m,n){var p=m.split("-"),d=new Date(+p[0],+p[1]-1+n,1);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
+function nomeMes(m){var p=m.split("-");return new Date(+p[0],+p[1]-1,1).toLocaleDateString("pt-BR",{month:"long",year:"numeric"});}
+function nDias(m){var p=m.split("-");return new Date(+p[0],+p[1],0).getDate();}
+function sem(m,d){var p=m.split("-");return new Date(+p[0],+p[1]-1,d).toLocaleDateString("pt-BR",{weekday:"short"}).replace(".","");}
+function brl(n){return n.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});}
+function num(v){var n=parseFloat(String(v).replace(/\./g,"").replace(",","."));return isNaN(n)?0:n;}
+function fmt(n){return n?n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}):"";}
+function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function doMes(){return dados.filter(function(c){return c.mes===ym;}).sort(function(a,b){return (a.dia||99)-(b.dia||99);});}
+function offs(){return folgas[ym]||[];}
+
+function plano(){
+  var N=nDias(ym),off=offs(),bills=doMes(),info=[],rows=[],d,i;
+  bills.forEach(function(c){
+    var D=c.dia>0?Math.min(c.dia,N):0,n=0;
+    for(d=1;d<=D;d++)if(off.indexOf(d)<0)n++;
+    info.push({c:c,D:D,n:n,por:n?Math.ceil(c.valor*100/n-1e-9)/100:0});
+  });
+  for(d=1;d<=N;d++){
+    var isOff=off.indexOf(d)>=0,cells=[],tot=0;
+    for(i=0;i<info.length;i++){
+      var v=(!isOff&&d<=info[i].D)?info[i].por:0;
+      cells.push(v);tot+=v;
+    }
+    rows.push({d:d,off:isOff,cells:cells,tot:tot});
+  }
+  return {N:N,info:info,rows:rows};
+}
+
+function grade(foco){
+  var p=plano(),box=document.getElementById("grade"),i,h="",avisos=[];
+  if(!p.info.length){box.innerHTML='<div class="vazio">Adicione contas acima para ver a meta de cada dia.</div>';resumo(p);document.getElementById("aviso").textContent="";return;}
+  h+='<table><thead><tr><th class="s1">Folga · dia</th>';
+  p.info.forEach(function(x){
+    var ruim=x.D===0||x.n===0;
+    if(x.D===0)avisos.push((x.c.nome||"Conta sem nome")+": informe o dia do vencimento.");
+    else if(x.n===0)avisos.push((x.c.nome||"Conta sem nome")+": todos os dias até o vencimento estão de folga.");
+    h+='<th'+(ruim?' class="al"':'')+'><b>'+esc(x.c.nome||"Sem nome")+'</b><span class="inf">'+(x.D?'até dia '+x.D+' · ':'')+fmt(x.c.valor)+'</span></th>';
+  });
+  h+='<th class="s2">Total do dia</th></tr></thead><tbody>';
+  var hoje=new Date(),eHoje=ym===agora()?hoje.getDate():0;
+  p.rows.forEach(function(r){
+    h+='<tr class="'+(r.off?'off ':'')+(r.d===eHoje?'hoje':'')+'"><td class="s1"><label><input type="checkbox" data-d="'+r.d+'"'+(r.off?' checked':'')+' aria-label="Folga no dia '+r.d+'"><span><b>'+r.d+'</b> '+sem(ym,r.d)+'</span></label></td>';
+    r.cells.forEach(function(v){h+='<td>'+(v?fmt(v):"–")+'</td>';});
+    h+='<td class="s2">'+(r.tot?fmt(r.tot):"–")+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  box.innerHTML=h;
+  box.querySelectorAll("input[type=checkbox]").forEach(function(cb){
+    cb.onchange=function(){
+      var d=+cb.dataset.d,a=offs().slice(),k=a.indexOf(d);
+      if(cb.checked&&k<0)a.push(d);if(!cb.checked&&k>=0)a.splice(k,1);
+      folgas[ym]=a;salvar();grade(d);
+    };
+  });
+  if(foco){var el=box.querySelector('input[data-d="'+foco+'"]');if(el)el.focus();}
+  document.getElementById("aviso").textContent=avisos.join(" ");
+  resumo(p);
+}
+function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+
+function resumo(p){
+  var total=0,trab=0;
+  doMes().forEach(function(c){total+=c.valor;});
+  p.rows.forEach(function(r){if(!r.off)trab++;});
+  document.getElementById("totalContas").textContent=brl(total);
+  document.getElementById("diasTrab").textContent=trab;
+  var el=document.getElementById("metaHoje"),lbl=document.getElementById("metaLbl");
+  if(ym===agora()){
+    var r=p.rows[new Date().getDate()-1];
+    el.textContent=r.off?"Folga":brl(r.tot);
+    lbl.textContent=r.off?"hoje é dia de folga":"meta de hoje";
+  }else{el.textContent="–";lbl.textContent="meta de hoje (só no mês atual)";}
+}
+
+function tam(el,min){el.size=Math.max(min,el.value.length+1);}
+var linhas={};
+function ordenar(){
+  var l=doMes(),corpo=document.getElementById("corpo"),mudou=false;
+  l.forEach(function(c,i){if(corpo.children[i]!==linhas[c.id])mudou=true;});
+  if(!mudou)return;
+  var a=document.activeElement;
+  l.forEach(function(c){corpo.appendChild(linhas[c.id]);});
+  if(a&&a!==document.body&&document.body.contains(a))a.focus();
+}
+function lista(){
+  document.getElementById("mes").textContent=nomeMes(ym);
+  var corpo=document.getElementById("corpo"),l=doMes();
+  corpo.innerHTML="";linhas={};
+  document.getElementById("vazio").hidden=l.length>0;
+  l.forEach(function(c){
+    var tr=document.createElement("tr");linhas[c.id]=tr;
+    tr.addEventListener("focusout",function(e){if(!tr.contains(e.relatedTarget))ordenar();});
+    tr.innerHTML='<td><input type="text" aria-label="Nome da conta" placeholder="Nome da conta"></td>'+
+      '<td class="d"><input type="number" min="1" max="31" aria-label="Dia do vencimento" placeholder="dia"></td>'+
+      '<td class="v"><input type="text" inputmode="decimal" aria-label="Valor" placeholder="0,00"></td>'+
+      '<td class="x"><button class="del" aria-label="Remover conta">×</button></td>';
+    var i=tr.querySelectorAll("input");
+    i[0].value=c.nome;i[1].value=c.dia||"";i[2].value=fmt(c.valor);tam(i[0],14);tam(i[2],9);
+    i[0].oninput=function(){c.nome=i[0].value;tam(i[0],14);salvar();grade();};
+    i[1].oninput=function(){c.dia=parseInt(i[1].value,10)||0;salvar();grade();};
+    i[2].oninput=function(){c.valor=num(i[2].value);tam(i[2],9);salvar();grade();};
+    i[2].onblur=function(){i[2].value=fmt(c.valor);tam(i[2],9);};
+    tr.querySelector(".del").onclick=function(){dados=dados.filter(function(x){return x!==c;});salvar();lista();};
+    corpo.appendChild(tr);
+  });
+  grade();
+}
+document.getElementById("ant").onclick=function(){ym=mover(ym,-1);lista();};
+document.getElementById("prox").onclick=function(){ym=mover(ym,1);lista();};
+document.getElementById("hoje").onclick=function(){ym=agora();lista();};
+document.getElementById("add").onclick=function(){
+  dados.push({id:id(),mes:ym,nome:"",dia:0,valor:0});salvar();lista();
+  var n=document.querySelectorAll("#corpo tr:last-child input")[0];if(n)n.focus();
+};
+document.getElementById("copiar").onclick=function(){
+  var ant=mover(ym,-1),jaTem=doMes().map(function(c){return c.nome;});
+  var novas=dados.filter(function(c){return c.mes===ant&&jaTem.indexOf(c.nome)<0;}).map(function(c){return {id:id(),mes:ym,nome:c.nome,dia:c.dia,valor:c.valor};});
+  dados=dados.concat(novas);salvar();lista();
+};
+function traduz(m){
+  if(/Invalid login/i.test(m))return "E-mail ou senha incorretos.";
+  if(/already registered/i.test(m))return "Este e-mail já tem conta. Use Entrar.";
+  if(/at least 6/i.test(m))return "A senha precisa ter pelo menos 6 caracteres.";
+  if(/not confirmed/i.test(m))return "Confirme seu e-mail antes de entrar.";
+  return m;
+}
+var msg=document.getElementById("msg");
+document.getElementById("fl").onsubmit=async function(ev){
+  ev.preventDefault();msg.textContent="";
+  var r=await sb.auth.signInWithPassword({email:document.getElementById("email").value.trim(),password:document.getElementById("senha").value});
+  if(r.error)msg.textContent=traduz(r.error.message);
+};
+document.getElementById("criar").onclick=async function(){
+  msg.textContent="";
+  var e=document.getElementById("email").value.trim(),s=document.getElementById("senha").value;
+  if(!e||s.length<6){msg.textContent="Informe um e-mail e uma senha de pelo menos 6 caracteres.";return;}
+  var r=await sb.auth.signUp({email:e,password:s});
+  if(r.error){msg.textContent=traduz(r.error.message);return;}
+  if(!r.data.session)msg.textContent="Conta criada. Abra o e-mail de confirmação que enviamos e depois clique em Entrar.";
+};
+document.getElementById("sair").onclick=function(){sb.auth.signOut();};
+sb.auth.onAuthStateChange(function(ev,sess){
+  var novo=sess?sess.user.id:null,atual=user?user.id:null;
+  user=sess?sess.user:null;
+  if(novo===atual)return;
+  document.getElementById("login").hidden=!!user;
+  document.getElementById("app").hidden=!user;
+  if(user){document.getElementById("quem").textContent=user.email;setTimeout(carregar,0);}
+  else{dados=[];folgas={};document.getElementById("senha").value="";}
+});
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&user&&!pendente)carregar();});
+})();
+</script>
+</body>
+</html>
