@@ -1,0 +1,4 @@
+window.CONFIG={
+  url:"https://lbqvzupaijhbsdzcsedd.supabase.co",
+  key:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxicXZ6dXBhaWpoYnNkemNzZWRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNTUwMzEsImV4cCI6MjEwODczMTAzMX0.OcQ8tc9AcbvVE3xPU-SsN2NBI1qucEXdMvVFPkhX6mQ"
+};
