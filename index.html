@@ -49,7 +49,7 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 #grade{width:fit-content;max-width:100%}
 #grade table{width:auto;font-size:.82rem;line-height:1.3}
 #grade th b{display:block;color:var(--ink);font-weight:700;font-size:.8rem}
-#grade .inf{white-space:nowrap;font-weight:400}
+#grade .inf{display:block;white-space:nowrap;font-weight:400}
 #grade th.al{color:var(--bad)}
 #grade td{padding:2px 8px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 #grade th{text-align:right;white-space:normal;padding:4px 8px;font-size:.72rem;line-height:1.25}
@@ -84,6 +84,7 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 #grade td.k label{justify-content:flex-end}
 #grade td.k.ok span{text-decoration:line-through;color:var(--muted)}
 #grade tr.pas td{color:var(--muted)}
+#grade th.atr,#grade tbody tr td.atr{background:color-mix(in srgb,var(--bad) 13%,var(--panel));color:var(--bad)}
 </style>
 </head>
 <body>
@@ -210,7 +211,7 @@ function plano(){
     Object.keys(mk).forEach(function(k){saved+=mk[k];});
     rest=Math.max(0,c.valor-saved);
     for(d=ini;d<=D;d++)if(!isOff(d)&&!mk[d])n++;
-    info.push({c:c,D:D,mk:mk,rest:rest,n:n,por:n?Math.ceil(rest*100/n-1e-9)/100:0});
+    info.push({c:c,D:D,mk:mk,rest:rest,n:n,atr:D>0&&D<ini&&rest>0,por:n?Math.ceil(rest*100/n-1e-9)/100:0});
   });
   for(d=1;d<=N;d++){
     var off=isOff(d),cells=[],tot=0,qm=0;
@@ -246,15 +247,18 @@ function grade(){
     var nm=x.c.nome||"Conta sem nome",ruim=false;
     if(x.D===0){ruim=true;av.push(nm+": informe o dia do vencimento.");}
     else if(x.rest>0&&x.n===0){ruim=true;av.push(x.D<p.ini?nm+": venceu e ainda faltam "+brl(x.rest)+".":nm+": todos os dias até o vencimento estão de folga.");}
-    h+='<th'+(ruim?' class="al"':'')+'><b>'+esc(x.c.nome||"Sem nome")+'</b><span class="inf">'+(x.D?'até dia '+x.D+' · ':'')+(x.rest<=0?'guardado · ':x.rest<x.c.valor?'falta '+fmt(x.rest)+' de ':'')+fmt(x.c.valor)+'</span></th>';
+    var l1=x.D?'vence dia '+x.D:'sem vencimento',l2=x.rest<=0?'guardado':(x.rest<x.c.valor?'falta '+fmt(x.rest):'');
+    h+='<th'+(ruim?' class="al'+(x.atr?' atr':'')+'"':'')+'><b>'+esc(x.c.nome||"Sem nome")+'</b><span class="inf">'+l1+'</span>'+(l2?'<span class="inf">'+l2+'</span>':'')+'</th>';
   });
   h+='<th class="s2">Meta do dia</th></tr></thead><tbody>';
   var eh=ym===agora()?new Date().getDate():0;
   p.rows.forEach(function(r){
     h+='<tr class="'+(r.off?'off ':'')+(r.pas?'pas ':'')+(r.d===eh?'hoje':'')+'"><td class="s1"><label><input type="checkbox" data-o="'+r.d+'"'+(r.off?' checked':'')+' aria-label="Folga no dia '+r.d+'"><span><b>'+r.d+'</b> '+DS[wd(ym,r.d)]+'</span></label></td>';
     r.cells.forEach(function(c,i){
-      if(c.m||c.v)h+='<td class="k'+(c.m?' ok':'')+'"><label><input type="checkbox" data-b="'+p.info[i].c.id+'" data-k="'+r.d+'"'+(c.m?' checked':'')+' aria-label="Já guardei esta parte de '+esc(p.info[i].c.nome||"conta")+' no dia '+r.d+'"><span>'+fmt(c.m||c.v)+'</span></label></td>';
-      else h+='<td>–</td>';
+      var x=p.info[i],ac=x.atr?' atr':'';
+      if(c.m||c.v)h+='<td class="k'+(c.m?' ok':'')+ac+'"><label><input type="checkbox" data-b="'+p.info[i].c.id+'" data-k="'+r.d+'"'+(c.m?' checked':'')+' aria-label="Já guardei esta parte de '+esc(p.info[i].c.nome||"conta")+' no dia '+r.d+'"><span>'+fmt(c.m||c.v)+'</span></label></td>';
+      else if(x.atr&&r.d===x.D)h+='<td class="atr"><b>'+fmt(x.rest)+'</b></td>';
+      else h+='<td'+(x.atr?' class="atr"':'')+'>–</td>';
     });
     h+='<td class="s2">'+(r.tot?fmt(r.tot):"–")+'</td></tr>';
   });
@@ -271,7 +275,7 @@ function grade(){
       var e=box.querySelector('input[data-b="'+b+'"][data-k="'+d+'"]');if(e)e.focus();
     };
   });
-  $("aviso").textContent=av.join(" ");
+  $("aviso").innerHTML=av.map(function(s){return '<div>'+esc(s)+'</div>';}).join("");
 }
 
 function desenharSemana(){
