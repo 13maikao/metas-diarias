@@ -120,6 +120,7 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 #grade tbody tr td.cc{background-image:linear-gradient(color-mix(in srgb,var(--cc) 13%,transparent),color-mix(in srgb,var(--cc) 13%,transparent))}
 #lista input[type=color]{width:26px;height:22px;padding:0;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer}
 button:disabled{opacity:.45;cursor:default}
+.perigo{color:var(--bad);border-color:var(--bad)}
 </style>
 <script>try{var tm=localStorage.getItem("tema");if(tm==="light"||tm==="dark")document.documentElement.setAttribute("data-theme",tm);}catch(e){}</script>
 </head>
@@ -189,6 +190,7 @@ button:disabled{opacity:.45;cursor:default}
     <button id="csv">Baixar para Excel (CSV)</button>
     <button id="bkp">Baixar backup</button>
     <button id="restBtn">Restaurar backup</button><input type="file" id="rest" accept=".json,application/json" hidden>
+    <button id="zerar" class="perigo">Zerar planilha</button>
     <button id="instalar" hidden>Instalar como aplicativo</button>
   </div>
   <p class="dica" style="margin-top:8px">Para instalar no iPhone, toque em Compartilhar e depois em Adicionar à Tela de Início.</p>
@@ -217,13 +219,20 @@ async function enviar(){
   if(r.error){status("Erro ao salvar. Verifique a conexão.");return;}
   pendente=false;status("Salvo");
 }
+function limparOrfaos(){
+  Object.keys(feitos).forEach(function(m){
+    Object.keys(feitos[m]).forEach(function(b){
+      if(!dados.some(function(c){return c.id===b&&c.mes===m;}))delete feitos[m][b];
+    });
+  });
+}
 async function carregar(){
   var r=await sb.from("planilha").select("dados,folgas").eq("user_id",user.id).maybeSingle();
   if(r.error){status("Erro ao carregar os dados.");return;}
   var d=r.data&&r.data.dados;if(Array.isArray(d))d={contas:d};d=d||{};
   dados=d.contas||[];feitos=d.feitos||{};exc=d.exc||{};fsem=d.fsem||[];rem=d.rem||{};
   folgas=(r.data&&r.data.folgas)||{};
-  hist=[];ultimo=estado();atualizarBtn();
+  limparOrfaos();hist=[];ultimo=estado();atualizarBtn();
   lista();status("Salvo");
 }
 function agora(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
@@ -295,7 +304,7 @@ function plano(){
 function resumo(p){
   var tot=0,all=0,dt=0,jun=0,F=feitos[ym]||{};
   doMes().forEach(function(c){all+=c.valor;if(!c.pago)tot+=c.valor;});
-  Object.keys(F).forEach(function(b){Object.keys(F[b]).forEach(function(k){jun+=F[b][k];});});
+  doMes().forEach(function(c){var m=F[c.id]||{};Object.keys(m).forEach(function(k){jun+=m[k];});});
   p.rows.forEach(function(r){if(!r.off)dt++;});
   $("totalContas").textContent=brl(tot);$("totalGeral").textContent=brl(all);$("juntado").textContent=brl(jun);$("diasTrab").textContent=dt;
   var el=$("metaHoje"),lbl=$("metaLbl");
@@ -412,7 +421,7 @@ function lista(){
     i[3].onchange=function(){c.fixa=i[3].checked;salvar();};
     i[4].onchange=function(){c.pago=i[4].checked;tr.className=c.pago?"paga":"";salvar();grade();};
     i[5].oninput=function(){c.cor=i[5].value;salvar("txt");grade();};
-    tr.querySelector(".del").onclick=function(){if(c.fixa)rem[ym+"|"+c.nome]=1;dados=dados.filter(function(x){return x!==c;});salvar();lista();};
+    tr.querySelector(".del").onclick=function(){if(c.fixa)rem[ym+"|"+c.nome]=1;if(feitos[ym])delete feitos[ym][c.id];dados=dados.filter(function(x){return x!==c;});salvar();lista();};
     corpo.appendChild(tr);
   });
   desenharSemana();
@@ -527,7 +536,7 @@ $("rest").onchange=function(){
     try{
       var d=JSON.parse(rd.result);if(!Array.isArray(d.contas))throw new Error("x");
       if(!confirm("Restaurar este backup vai substituir os dados atuais. Continuar?"))return;
-      dados=d.contas;feitos=d.feitos||{};exc=d.exc||{};fsem=d.fsem||[];rem=d.rem||{};folgas=d.folgas||{};
+      dados=d.contas;feitos=d.feitos||{};exc=d.exc||{};fsem=d.fsem||[];rem=d.rem||{};folgas=d.folgas||{};limparOrfaos();
       salvar();lista();
     }catch(e){alert("Arquivo de backup inválido.");}
   };
@@ -551,6 +560,12 @@ document.addEventListener("keydown",function(e){
     e.preventDefault();desfazerAcao();
   }
 });
+$("zerar").onclick=function(){
+  var r=prompt("Isto apaga TODAS as contas, marcações, folgas e configurações da sua planilha, em todos os seus aparelhos. Para confirmar, digite ZERAR:");
+  if(r===null||r.trim().toUpperCase()!=="ZERAR")return;
+  dados=[];feitos={};exc={};fsem=[];rem={};folgas={};
+  salvar();lista();
+};
 lista();
 })();
 </script>
