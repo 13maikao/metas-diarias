@@ -121,6 +121,10 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 button:disabled{opacity:.45;cursor:default}
 .perigo{color:var(--bad);border-color:var(--bad)}
 @media (pointer:coarse){#grade td{padding:5px 8px}#grade input[type=checkbox]{width:18px;height:18px}}
+.menu{display:flex;gap:8px;margin-bottom:14px}
+.menu a{padding:6px 14px;border:1px solid var(--line);border-radius:8px;color:var(--ink);text-decoration:none;background:var(--panel);font-size:.95rem}
+.menu a.on{background:var(--accent);border-color:var(--accent);color:#fff}
+@media print{.menu{display:none!important}}
 </style>
 <script>try{var tm=localStorage.getItem("tema");if(tm==="light"||tm==="dark")document.documentElement.setAttribute("data-theme",tm);}catch(e){}</script>
 </head>
@@ -144,6 +148,7 @@ button:disabled{opacity:.45;cursor:default}
   <button class="prim" id="salvarSenha" type="button">Salvar nova senha</button>
 </section>
 <main id="app" hidden>
+<div class="menu"><a class="on" href="index.html">Metas diárias</a><a href="parcelas.html">Parcelas</a></div>
 <h1>Meta diária das contas</h1>
 <div class="topo"><span id="quem"></span><span id="sync"></span><button id="desfazer" disabled title="Desfaz a última alteração (Ctrl+Z)">Desfazer</button><span class="tema" role="group" aria-label="Tema da tela"><button data-t="light" aria-pressed="false">Claro</button><button data-t="dark" aria-pressed="false">Escuro</button><button data-t="auto" aria-pressed="true" title="Usa o mesmo tema do aparelho">Automático</button></span><button id="sair">Sair</button></div>
 <div class="nav">

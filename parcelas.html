@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Parcelas</title>
+<meta name="theme-color" content="#2f5bea">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f5;--card:#fff;--tx:#1d2433;--mut:#667085;--line:#cbd2dd;--acc:#217346;--accbg:#e4f2ea;--tot:#fff6d6;--red:#c2412d;--blue:#2f5bea;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141a26;--card:#1c2434;--tx:#e8ecf4;--mut:#98a2b8;--line:#2e394f;--acc:#4caf7a;--accbg:#1f3328;--tot:#3a3418;--red:#ff8a73;--blue:#7c9bff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141a26;--card:#1c2434;--tx:#e8ecf4;--mut:#98a2b8;--line:#2e394f;--acc:#4caf7a;--accbg:#1f3328;--tot:#3a3418;--red:#ff8a73;--blue:#7c9bff;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:400 16px/1.5 "Figtree",system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1200px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.4rem;margin:0 0 12px;font-weight:700}
+[hidden]{display:none!important}
+.menu{display:flex;gap:8px;margin-bottom:14px}
+.menu a{padding:6px 14px;border:1px solid var(--line);border-radius:8px;color:var(--tx);text-decoration:none;background:var(--card);font-size:.95rem}
+.menu a.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.topo{display:flex;align-items:center;gap:12px;margin:0 0 14px;color:var(--mut);font-size:.85rem;flex-wrap:wrap}
+.topo button{padding:4px 10px;font-size:.85rem}
+.tema{display:inline-flex}
+.tema button{border-radius:0}
+.tema button:first-child{border-radius:8px 0 0 8px}
+.tema button:last-child{border-radius:0 8px 8px 0}
+.tema button+button{margin-left:-1px}
+.tema button[aria-pressed="true"]{background:var(--blue)!important;border:1px solid var(--blue);color:#fff!important}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+.panel h2{font-size:14px;margin:0;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
+label{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:3px;flex:1 1 130px}
+input,select,textarea,button{font:inherit;padding:8px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--tx);min-width:0}
+button{background:var(--card);cursor:pointer}
+button.g{background:var(--acc);color:#fff;border:0;font-weight:600;padding:9px 14px}
+button.ghost{background:none;border:0;color:var(--red);padding:2px 6px;font-size:16px}
+.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);text-align:right;white-space:nowrap}
+th{background:var(--accbg);color:var(--acc);font-size:13px}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--card);z-index:1;min-width:170px;max-width:210px;overflow:hidden;text-overflow:ellipsis}
+th:first-child{background:var(--accbg)}
+tr.acc td{background:var(--accbg);font-weight:700}
+tr.acc td:first-child{background:var(--accbg)}
+tr.item td:first-child{padding-left:20px}
+tr.grand td,tr.grand td:first-child{background:var(--tot);font-weight:700}
+td.z{color:var(--mut);opacity:.4}
+.sub{font-size:11px;color:var(--mut);font-weight:400}
+.empty{padding:20px;text-align:center;color:var(--mut)}
+.ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.min{padding:2px 12px;font-size:18px;color:var(--mut)}
+.big{width:100%;padding:12px}
+.tg{background:none;border:0;color:var(--acc);padding:0 6px 0 0;font-size:12px;cursor:pointer}
+.bar{margin-bottom:8px}
+.hide{display:none}
+.paid{opacity:.55;text-decoration:line-through}
+td input[type=checkbox]{margin-right:6px;accent-color:var(--acc);width:16px;height:16px;vertical-align:middle;padding:0}
+.arm{font-weight:700;font-size:12px}
+.v{cursor:pointer;border-bottom:1px dotted var(--mut)}
+.v.ed{color:var(--acc);font-weight:700;border-bottom-color:var(--acc)}
+.ei{width:84px;padding:3px 5px;text-align:right}
+.dica{color:var(--mut);font-size:.85rem;margin:6px 0 0}
+@media print{.menu,.topo,.panel,.bar{display:none!important}body{background:#fff}}
+</style>
+<script>try{var tm=localStorage.getItem("tema");if(tm==="light"||tm==="dark")document.documentElement.setAttribute("data-theme",tm);}catch(e){}</script>
+</head>
+<body>
+<main id="semlogin">
+<h1>Parcelas</h1>
+<p>Entre na sua conta para ver as suas parcelas.</p>
+<a href="index.html">Ir para o login</a>
+</main>
+
+<main id="app" hidden>
+<div class="menu"><a href="index.html">Metas diárias</a><a class="on" href="parcelas.html">Parcelas</a></div>
+<h1>Planilha de Parcelas</h1>
+<div class="topo"><span id="quem"></span><span id="sync"></span><span class="tema" role="group" aria-label="Tema da tela"><button data-t="light" aria-pressed="false">Claro</button><button data-t="dark" aria-pressed="false">Escuro</button><button data-t="auto" aria-pressed="true">Automático</button></span><button id="sair">Sair</button></div>
+
+<div class="panel">
+<button class="g big hide" id="b1" onclick="tp(1)">CADASTRAR CARTÃO OU CONTA</button>
+<div id="c1">
+<div class="ph"><h2>1. Cadastrar cartão ou conta</h2><button class="min" title="Minimizar" onclick="tp(1)">–</button></div>
+<div class="row">
+<label>Nome<input id="an" placeholder="Ex.: Nubank, Itaú…"></label>
+<label>Tipo<select id="at"><option>Cartão</option><option>Conta</option></select></label>
+<button class="g" onclick="addAcc()">Adicionar</button>
+</div>
+</div>
+</div>
+
+<div class="panel">
+<button class="g big hide" id="b2" onclick="tp(2)">ANOTAR COMPRA OU CONTA</button>
+<div id="c2">
+<div class="ph"><h2>2. Anotar compra ou conta</h2><button class="min" title="Minimizar" onclick="tp(2)">–</button></div>
+<div class="row">
+<label>Cartão/conta<select id="pa"></select></label>
+<label>Descrição<input id="pd" placeholder="Ex.: Tênis"></label>
+<label>Valor (R$)<input id="pv" type="number" step="0.01" min="0" inputmode="decimal"></label>
+<label>Forma<select id="pm"><option value="parc">Parcelado (valor total ÷ parcelas)</option><option value="fixo">Mesmo valor por mês</option></select></label>
+<label>Nº de meses/parcelas<input id="pn" type="number" min="1" value="1"></label>
+<label>Primeiro mês<input id="ps" type="month"></label>
+<button class="g" onclick="addItem()">Adicionar</button>
+</div>
+</div>
+</div>
+
+<div class="bar"><button class="g" id="ta" onclick="tall()">Minimizar contas</button></div>
+<div class="wrap"><table id="grid"></table></div>
+<p class="dica">Toque no valor de uma parcela para alterá-lo (juros, taxas). Digite 0 para zerar, ou apague o campo para voltar ao valor dividido.</p>
+
+</main>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+const C=window.CONFIG||{},sb=window.supabase.createClient(C.url||"COLE_AQUI_A_URL_DO_PROJETO",C.key||"COLE_AQUI_A_CHAVE_ANON");
+const $=i=>document.getElementById(i);
+const MN=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+let user=null,tmr=null,pendente=false,editing=null,armed=null;
+let S={accounts:[],items:[],paid:{},over:{}};
+let UI={p:{},c:{}};
+try{UI=JSON.parse(localStorage.getItem('parcelas-ui'))||UI}catch(e){}
+UI.p=UI.p||{};UI.c=UI.c||{};
+function saveUI(){try{localStorage.setItem('parcelas-ui',JSON.stringify(UI))}catch(e){}}
+function setSync(x){$('sync').textContent=x}
+function save(){
+  if(!user)return;
+  pendente=true;clearTimeout(tmr);setSync('Salvando…');tmr=setTimeout(enviar,500);
+}
+async function enviar(){
+  const r=await sb.from('parcelas').upsert({user_id:user.id,dados:S,updated_at:new Date().toISOString()});
+  if(r.error){setSync('Erro ao salvar. Verifique a conexão.');return}
+  pendente=false;setSync('Salvo');
+}
+async function carregar(){
+  const r=await sb.from('parcelas').select('dados').eq('user_id',user.id).maybeSingle();
+  if(r.error){setSync('Erro ao carregar os dados.');return}
+  const d=(r.data&&r.data.dados)||{};
+  S={accounts:d.accounts||[],items:d.items||[],paid:d.paid||{},over:d.over||{}};
+  setSync('Salvo');render();
+}
+const brl=c=>(c/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mi=s=>{const[y,m]=s.split('-').map(Number);return y*12+m-1};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const now=new Date(),cur=now.getFullYear()*12+now.getMonth();
+$('ps').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+
+function amounts(it){
+  const c=Math.round(it.total*100),n=it.n,s=mi(it.start),o={};
+  if(it.mode==='fixo'){for(let i=0;i<n;i++)o[s+i]=c}
+  else{const b=Math.floor(c/n);for(let i=0;i<n;i++)o[s+i]=b;o[s+n-1]+=c-b*n}
+  Object.keys(o).forEach(m=>{const v=S.over[it.id+':'+m];if(v!=null)o[m]=v});
+  return o;
+}
+function limpar(id){[S.paid,S.over].forEach(o=>Object.keys(o).forEach(k=>{if(k.startsWith(id+':'))delete o[k]}))}
+function applyP(){[1,2].forEach(n=>{const m=!!UI.p[n];$('b'+n).classList.toggle('hide',!m);$('c'+n).classList.toggle('hide',m)})}
+function tp(n){UI.p[n]=!UI.p[n];saveUI();applyP()}
+function tc(id){UI.c[id]=!UI.c[id];saveUI();render()}
+function tall(){const all=S.accounts.every(a=>UI.c[a.id]);S.accounts.forEach(a=>UI.c[a.id]=!all);saveUI();render()}
+function ed(k){editing=k;render();const e=$('ei');if(e){e.focus();e.select()}}
+function commitEd(k,val,cancel){
+  if(editing!==k)return;editing=null;
+  if(!cancel){const t=val.trim();
+    if(t==='')delete S.over[k];
+    else{const n=parseFloat(t.includes(',')?t.replace(/\./g,'').replace(',','.'):t);if(n>=0)S.over[k]=Math.round(n*100)}
+    save()}
+  render();
+}
+function tpaid(k){if(S.paid[k])delete S.paid[k];else S.paid[k]=1;save();render()}
+function tpaidAcc(aid,m){
+  const its=S.items.filter(i=>i.acc===aid&&amounts(i)[m]!==undefined);
+  const all=its.every(i=>S.paid[i.id+':'+m]);
+  its.forEach(i=>{if(all)delete S.paid[i.id+':'+m];else S.paid[i.id+':'+m]=1});save();render();
+}
+function addAcc(){
+  const n=$('an').value.trim();if(!n)return $('an').focus();
+  S.accounts.push({id:uid(),name:n,type:$('at').value});$('an').value='';save();render();
+}
+function addItem(){
+  const v=parseFloat($('pv').value),n=parseInt($('pn').value)||1;
+  if(!$('pa').value)return alert('Cadastre um cartão ou conta primeiro.');
+  if(!(v>0))return $('pv').focus();
+  if(!$('ps').value)return $('ps').focus();
+  S.items.push({id:uid(),acc:$('pa').value,desc:$('pd').value.trim()||'Compra',total:v,n:Math.max(1,n),start:$('ps').value,mode:$('pm').value});
+  $('pd').value='';$('pv').value='';$('pn').value=1;save();render();
+}
+function delItem(id){S.items=S.items.filter(i=>i.id!==id);limpar(id);save();render()}
+function delAcc(id){
+  if(armed!==id){armed=id;render();setTimeout(()=>{if(armed===id){armed=null;render()}},4000);return}
+  armed=null;
+  S.items.filter(i=>i.acc===id).forEach(i=>limpar(i.id));
+  S.accounts=S.accounts.filter(a=>a.id!==id);S.items=S.items.filter(i=>i.acc!==id);save();render();
+}
+function render(){
+  const cur0=$('pa').value;
+  $('pa').innerHTML=S.accounts.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  if(S.accounts.some(a=>a.id===cur0))$('pa').value=cur0;
+  const g=$('grid');
+  $('ta').textContent=S.accounts.length&&S.accounts.every(a=>UI.c[a.id])?'Expandir contas':'Minimizar contas';
+  if(!S.accounts.length){g.innerHTML='<tr><td class="empty">Cadastre um cartão ou conta para começar.</td></tr>';return}
+  let lo=cur,hi=cur+5;
+  const am=new Map();
+  S.items.forEach(it=>{const a=amounts(it);am.set(it.id,a);const k=Object.keys(a).map(Number);lo=Math.min(lo,...k);hi=Math.max(hi,...k)});
+  const ms=[];for(let m=lo;m<=hi;m++)ms.push(m);
+  const colT=ms.map(()=>0),colP=ms.map(()=>0);let all=0;
+  let h='<tr><th>Cartão / conta</th>'+ms.map(m=>`<th>${MN[m%12]}<div class="sub">${Math.floor(m/12)}</div></th>`).join('')+'<th>Total</th></tr>';
+  S.accounts.forEach(a=>{
+    const its=S.items.filter(i=>i.acc===a.id);
+    const at_=ms.map(()=>0),pd_=ms.map(()=>0);
+    its.forEach(i=>ms.forEach((m,k)=>{const v=am.get(i.id)[m]||0;if(S.paid[i.id+':'+m])pd_[k]+=v;else at_[k]+=v}));
+    const tot=at_.reduce((x,y)=>x+y,0);
+    at_.forEach((v,k)=>colT[k]+=v);pd_.forEach((v,k)=>colP[k]+=v);all+=tot;
+    h+=`<tr class="acc"><td><button class="tg" title="Minimizar/expandir" onclick="tc('${a.id}')">${UI.c[a.id]?'▶':'▼'}</button>${esc(a.name)} <button class="ghost" title="Apagar" onclick="delAcc('${a.id}')">${armed===a.id?'<span class="arm">Toque de novo p/ apagar</span>':'×'}</button><div class="sub">${a.type} · a pagar no mês atual: ${brl(at_[cur-lo])}</div></td>`+
+      at_.map((v,k)=>{const f=v+pd_[k];if(!f)return '<td class="z">–</td>';const ok=v===0;return `<td class="${ok?'paid':''}"><input type="checkbox" title="Fatura/conta do mês paga" ${ok?'checked':''} onchange="tpaidAcc('${a.id}',${ms[k]})">${brl(ok?f:v)}</td>`}).join('')+`<td>${brl(tot)}</td></tr>`;
+    (UI.c[a.id]?[]:its).forEach(i=>{
+      const a2=am.get(i.id),t=Object.values(a2).reduce((x,y)=>x+y,0),orig=Math.round(i.total*100)*(i.mode==='fixo'?i.n:1);
+      const rem=Object.keys(a2).reduce((s,m)=>s+(S.paid[i.id+':'+m]?0:a2[m]),0);
+      const info=i.mode==='fixo'?`${i.n}× fixo`:(i.n>1?`${i.n}x`:'à vista');
+      h+=`<tr class="item"><td title="${esc(i.desc)}">${esc(i.desc)} <button class="ghost" title="Apagar" onclick="delItem('${i.id}')">×</button><div class="sub">${brl(orig)} · ${info}${t!==orig?' · real: '+brl(t):''}</div></td>`+
+        ms.map(m=>{if(a2[m]===undefined)return '<td class="z">–</td>';const k=i.id+':'+m,p=S.paid[k],ov=S.over[k]!=null;const val=editing===k?`<input id="ei" class="ei" inputmode="decimal" placeholder="vazio = padrão" value="${(a2[m]/100).toFixed(2).replace('.',',')}" onblur="commitEd('${k}',this.value)" onkeydown="if(event.key==='Enter')commitEd('${k}',this.value);else if(event.key==='Escape')commitEd('${k}','',1)">`:`<span class="v${ov?' ed':''}" onclick="ed('${k}')" title="Toque para alterar o valor">${brl(a2[m])}</span>`;return `<td class="${p?'paid':''}"><input type="checkbox" title="Paga" ${p?'checked':''} onchange="tpaid('${k}')">${val}</td>`}).join('')+`<td>${brl(rem)}</td></tr>`;
+    });
+  });
+  h+='<tr class="grand"><td>TOTAL A PAGAR<div class="sub">só o que não está marcado como pago</div></td>'+colT.map((v,k)=>`<td>${brl(v)}${colP[k]?`<div class="sub">pago ${brl(colP[k])}</div>`:''}</td>`).join('')+`<td>${brl(all)}</td></tr>`;
+  g.innerHTML=h;
+}
+
+/* ---------- login, tema ---------- */
+function mostrar(){$('semlogin').hidden=!!user;$('app').hidden=!user}
+$('sair').onclick=()=>sb.auth.signOut();
+sb.auth.onAuthStateChange((ev,sess)=>{
+  const novo=sess?sess.user.id:null,atual=user?user.id:null;
+  user=sess?sess.user:null;
+  if(novo===atual)return;
+  if(!user){S={accounts:[],items:[],paid:{},over:{}};mostrar();return}
+  $('quem').textContent=user.email;mostrar();setTimeout(carregar,0);
+});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&user&&!pendente&&!editing)carregar()});
+function aplicarTema(x){
+  const r=document.documentElement,f=(x==='light'||x==='dark')?x:'auto';
+  if(f==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',f);
+  document.querySelectorAll('.tema button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===f)));
+}
+let tema='auto';try{tema=localStorage.getItem('tema')||'auto'}catch(e){}
+aplicarTema(tema);
+document.querySelectorAll('.tema button').forEach(b=>{b.onclick=()=>{tema=b.dataset.t;aplicarTema(tema);try{localStorage.setItem('tema',tema)}catch(e){}}});
+applyP();
+</script>
+</body>
+</html>
