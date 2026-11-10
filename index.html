@@ -54,12 +54,12 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 .acoes{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
 .prim{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 #grade{width:fit-content;max-width:100%}
-#grade table{width:auto;font-size:.8rem;line-height:1.2}
-#grade th b{display:block;color:var(--ink);font-weight:700;font-size:.8rem}
+#grade table{width:auto;font-size:.72rem;line-height:1.1}
+#grade th b{display:block;color:var(--ink);font-weight:700;font-size:.72rem}
 #grade .inf{display:block;white-space:nowrap;font-weight:400}
 #grade th.al{color:var(--bad)}
-#grade td{padding:1px 8px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-#grade th{text-align:right;white-space:normal;padding:4px 8px;font-size:.72rem;line-height:1.25}
+#grade td{padding:0 5px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+#grade th{text-align:right;white-space:normal;padding:3px 5px;font-size:.66rem;line-height:1.2}
 #grade .s1{position:sticky;left:0;text-align:left;background:var(--panel);z-index:1}
 #grade th.s1{background:var(--head)}
 #grade .s2,#grade .s3{position:sticky;right:0;background:var(--panel);font-weight:700;z-index:1;border-left:2px solid var(--line)}
@@ -68,8 +68,8 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 #grade tr.off td{background:var(--off);color:var(--muted)}
 #grade tr.off .s1,#grade tr.off .s2,#grade tr.off .s3{background:var(--off)}
 #grade tr.hoje td,#grade tr.hoje .s1,#grade tr.hoje .s2,#grade tr.hoje .s3{background:var(--hoje)}
-#grade label{display:flex;align-items:center;gap:6px;cursor:pointer}
-#grade input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);cursor:pointer}
+#grade label{display:flex;align-items:center;gap:3px;cursor:pointer}
+#grade input[type=checkbox]{width:12px;height:12px;margin:0;accent-color:var(--accent);cursor:pointer}
 #grade tfoot td{font-weight:700;background:var(--head)}
 #grade tfoot .s1,#grade tfoot .s2{background:var(--head)}
 #aviso{color:var(--bad);font-size:.9rem;margin-top:10px}
@@ -120,14 +120,14 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 #lista .cor{width:26px;height:22px;padding:0;border:1px solid var(--line);border-radius:3px;cursor:pointer;vertical-align:middle}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
 .modal[hidden]{display:none}
-.box{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px;width:100%;max-width:320px}
-.box h2{margin:0 0 10px}
+.cbox{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px;width:100%;max-width:320px}
+.cbox h2{margin:0 0 10px}
 .prev{height:44px;border-radius:3px;border:1px solid var(--line);margin:0 0 10px}
-.box .rgb{display:flex;gap:8px}
-.box label{display:flex;flex-direction:column;font-size:.8rem;color:var(--muted);gap:3px;flex:1;min-width:0}
-.box input{width:100%;font:inherit;padding:8px;border:1px solid var(--line);border-radius:3px;background:var(--bg);color:var(--ink)}
-.box input[type=color]{height:40px;padding:2px}
-.box .acoes{display:flex;gap:8px;margin-top:14px}
+.cbox .rgb{display:flex;gap:8px}
+.cbox label{display:flex;flex-direction:column;font-size:.8rem;color:var(--muted);gap:3px;flex:1;min-width:0}
+.cbox input{width:100%;font:inherit;padding:8px;border:1px solid var(--line);border-radius:3px;background:var(--bg);color:var(--ink)}
+.cbox input[type=color]{height:40px;padding:2px}
+.cbox .acoes{display:flex;gap:8px;margin-top:14px}
 button:disabled{opacity:.45;cursor:default}
 .perigo{color:var(--bad);border-color:var(--bad)}
 @media (pointer:coarse){#grade td{padding:5px 8px}#grade input[type=checkbox]{width:18px;height:18px}}
@@ -214,7 +214,7 @@ button:disabled{opacity:.45;cursor:default}
 </div>
 </main>
 <div id="cordlg" class="modal" hidden>
-<div class="box">
+<div class="cbox">
 <h2>Cor da conta</h2>
 <div class="prev" id="cor-prev"></div>
 <div class="rgb">
@@ -463,11 +463,11 @@ function lista(){
       '<td class="c"><button type="button" class="cor" aria-label="Mudar a cor da conta" title="Mudar a cor"></button></td>'+
       '<td class="x"><button class="del" aria-label="Remover conta">×</button></td>';
     var i=tr.querySelectorAll("input");
-    i[0].value=c.nome;i[1].value=c.dia||"";i[2].value=fmt(c.valor);i[3].checked=!!c.fixa;i[4].checked=!!c.pago;tam(i[0],14);tam(i[2],9);
+    i[0].value=c.nome;i[1].value=c.dia||"";i[2].value=fmt(c.valor);i[3].checked=!!c.fixa;i[4].checked=!!c.pago;tam(i[0],14);tam(i[2],12);
     i[0].oninput=function(){c.nome=i[0].value;tam(i[0],14);salvar("txt");grade();};
     i[1].oninput=function(){c.dia=parseInt(i[1].value,10)||0;salvar("txt");grade();};
-    i[2].oninput=function(){c.valor=num(i[2].value);tam(i[2],9);salvar("txt");grade();};
-    i[2].onblur=function(){i[2].value=fmt(c.valor);tam(i[2],9);};
+    i[2].oninput=function(){c.valor=num(i[2].value);tam(i[2],12);salvar("txt");grade();};
+    i[2].onblur=function(){i[2].value=fmt(c.valor);tam(i[2],12);};
     i[3].onchange=function(){c.fixa=i[3].checked;salvar();};
     i[4].onchange=function(){c.pago=i[4].checked;tr.className=c.pago?"paga":"";salvar();grade();};
     var sw=tr.querySelector(".cor");sw.style.background=corDe(c);sw.onclick=function(){corAbrir(c,sw);};
