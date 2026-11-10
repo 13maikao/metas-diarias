@@ -117,7 +117,17 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 #grade th.s1,#grade th.s2,#grade th.s3{z-index:3}
 #grade th.cc{box-shadow:inset 0 5px 0 var(--cc),inset 0 -1px 0 var(--line)}
 #grade tbody tr td.cc{background-image:linear-gradient(color-mix(in srgb,var(--cc) 13%,transparent),color-mix(in srgb,var(--cc) 13%,transparent))}
-#lista input[type=color]{width:26px;height:22px;padding:0;border:1px solid var(--line);border-radius:3px;background:none;cursor:pointer}
+#lista .cor{width:26px;height:22px;padding:0;border:1px solid var(--line);border-radius:3px;cursor:pointer;vertical-align:middle}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal[hidden]{display:none}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px;width:100%;max-width:320px}
+.box h2{margin:0 0 10px}
+.prev{height:44px;border-radius:3px;border:1px solid var(--line);margin:0 0 10px}
+.box .rgb{display:flex;gap:8px}
+.box label{display:flex;flex-direction:column;font-size:.8rem;color:var(--muted);gap:3px;flex:1;min-width:0}
+.box input{width:100%;font:inherit;padding:8px;border:1px solid var(--line);border-radius:3px;background:var(--bg);color:var(--ink)}
+.box input[type=color]{height:40px;padding:2px}
+.box .acoes{display:flex;gap:8px;margin-top:14px}
 button:disabled{opacity:.45;cursor:default}
 .perigo{color:var(--bad);border-color:var(--bad)}
 @media (pointer:coarse){#grade td{padding:5px 8px}#grade input[type=checkbox]{width:18px;height:18px}}
@@ -203,6 +213,20 @@ button:disabled{opacity:.45;cursor:default}
   <p class="dica" style="margin-top:8px">Para instalar no iPhone, toque em Compartilhar e depois em Adicionar à Tela de Início.</p>
 </div>
 </main>
+<div id="cordlg" class="modal" hidden>
+<div class="box">
+<h2>Cor da conta</h2>
+<div class="prev" id="cor-prev"></div>
+<div class="rgb">
+<label>R (0-255)<input id="cor-r" type="number" min="0" max="255" inputmode="numeric"></label>
+<label>G (0-255)<input id="cor-g" type="number" min="0" max="255" inputmode="numeric"></label>
+<label>B (0-255)<input id="cor-b" type="number" min="0" max="255" inputmode="numeric"></label>
+</div>
+<label style="margin-top:10px">Ou escolha na paleta<input id="cor-p" type="color"></label>
+<div class="acoes"><button class="prim" id="cor-ok" type="button">Salvar</button><button id="cor-cancel" type="button">Cancelar</button></div>
+</div>
+</div>
+
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
@@ -402,6 +426,25 @@ function ordenar(){
   l.forEach(function(c){corpo.appendChild(linhas[c.id]);});
   if(a&&a!==document.body&&document.body.contains(a))a.focus();
 }
+var corAlvo=null,corAtual="#000000";
+function hex2(n){n=Math.max(0,Math.min(255,n|0));return (n<16?"0":"")+n.toString(16);}
+function corSet(c){
+  corAtual=c;$("cor-prev").style.background=c;$("cor-p").value=c;
+  var n=parseInt(c.slice(1),16);
+  $("cor-r").value=(n>>16)&255;$("cor-g").value=(n>>8)&255;$("cor-b").value=n&255;
+}
+function corRgb(){
+  var v=["cor-r","cor-g","cor-b"].map(function(i){var x=parseInt($(i).value,10);return isNaN(x)?0:Math.max(0,Math.min(255,x));});
+  corAtual="#"+v.map(hex2).join("");$("cor-prev").style.background=corAtual;$("cor-p").value=corAtual;
+}
+function corAbrir(c,sw){corAlvo={c:c,sw:sw};corSet(corDe(c));$("cordlg").hidden=false;}
+function corFechar(){$("cordlg").hidden=true;corAlvo=null;}
+function corOk(){if(corAlvo){corAlvo.c.cor=corAtual;corAlvo.sw.style.background=corAtual;salvar("txt");grade();}corFechar();}
+["cor-r","cor-g","cor-b"].forEach(function(i){$(i).oninput=corRgb;});
+$("cor-p").oninput=function(){corSet(this.value);};
+$("cor-ok").onclick=corOk;
+$("cor-cancel").onclick=corFechar;
+$("cordlg").onclick=function(e){if(e.target===this)corFechar();};
 function lista(){
   $("mes").textContent=nomeMes(ym);
   gerarFixas();
@@ -417,17 +460,17 @@ function lista(){
       '<td class="v"><input type="text" inputmode="decimal" aria-label="Valor" placeholder="0,00"></td>'+
       '<td class="c"><input type="checkbox" aria-label="Conta fixa, repete todo mês"></td>'+
       '<td class="c"><input type="checkbox" aria-label="Conta paga"></td>'+
-      '<td class="c"><input type="color" aria-label="Cor da conta"></td>'+
+      '<td class="c"><button type="button" class="cor" aria-label="Mudar a cor da conta" title="Mudar a cor"></button></td>'+
       '<td class="x"><button class="del" aria-label="Remover conta">×</button></td>';
     var i=tr.querySelectorAll("input");
-    i[0].value=c.nome;i[1].value=c.dia||"";i[2].value=fmt(c.valor);i[3].checked=!!c.fixa;i[4].checked=!!c.pago;i[5].value=corDe(c);tam(i[0],14);tam(i[2],9);
+    i[0].value=c.nome;i[1].value=c.dia||"";i[2].value=fmt(c.valor);i[3].checked=!!c.fixa;i[4].checked=!!c.pago;tam(i[0],14);tam(i[2],9);
     i[0].oninput=function(){c.nome=i[0].value;tam(i[0],14);salvar("txt");grade();};
     i[1].oninput=function(){c.dia=parseInt(i[1].value,10)||0;salvar("txt");grade();};
     i[2].oninput=function(){c.valor=num(i[2].value);tam(i[2],9);salvar("txt");grade();};
     i[2].onblur=function(){i[2].value=fmt(c.valor);tam(i[2],9);};
     i[3].onchange=function(){c.fixa=i[3].checked;salvar();};
     i[4].onchange=function(){c.pago=i[4].checked;tr.className=c.pago?"paga":"";salvar();grade();};
-    i[5].oninput=function(){c.cor=i[5].value;salvar("txt");grade();};
+    var sw=tr.querySelector(".cor");sw.style.background=corDe(c);sw.onclick=function(){corAbrir(c,sw);};
     tr.querySelector(".del").onclick=function(){if(c.fixa)rem[ym+"|"+c.nome]=1;if(feitos[ym])delete feitos[ym][c.id];dados=dados.filter(function(x){return x!==c;});salvar();lista();};
     corpo.appendChild(tr);
   });
