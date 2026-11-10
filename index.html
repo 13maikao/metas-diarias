@@ -101,7 +101,7 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 .tema button:first-child{border-radius:8px 0 0 8px}
 .tema button:last-child{border-radius:0 8px 8px 0}
 .tema button+button{margin-left:-1px}
-.tema button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.tema button[aria-pressed="true"]{background:var(--verde);border-color:var(--verde);color:#fff}
 #grade b.vm{color:var(--bad);margin-left:4px}
 .export{margin-top:8px}
 @page{size:landscape;margin:10mm}
@@ -121,9 +121,12 @@ th{background:var(--head);font-size:.85rem;font-weight:500;color:var(--muted);pa
 button:disabled{opacity:.45;cursor:default}
 .perigo{color:var(--bad);border-color:var(--bad)}
 @media (pointer:coarse){#grade td{padding:5px 8px}#grade input[type=checkbox]{width:18px;height:18px}}
+:root{--verde:#217346}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--verde:#4caf7a}}
+:root[data-theme="dark"]{--verde:#4caf7a}
 .menu{display:flex;gap:8px;margin-bottom:14px}
 .menu a{padding:6px 14px;border:1px solid var(--line);border-radius:8px;color:var(--ink);text-decoration:none;background:var(--panel);font-size:.95rem}
-.menu a.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.menu a.on{background:var(--verde);border-color:var(--verde);color:#fff}
 @media print{.menu{display:none!important}}
 </style>
 <script>try{var tm=localStorage.getItem("tema");if(tm==="light"||tm==="dark")document.documentElement.setAttribute("data-theme",tm);}catch(e){}</script>

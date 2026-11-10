@@ -21,7 +21,7 @@ h1{font-size:1.4rem;margin:0 0 12px;font-weight:700}
 [hidden]{display:none!important}
 .menu{display:flex;gap:8px;margin-bottom:14px}
 .menu a{padding:6px 14px;border:1px solid var(--line);border-radius:8px;color:var(--tx);text-decoration:none;background:var(--card);font-size:.95rem}
-.menu a.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.menu a.on{background:var(--acc);border-color:var(--acc);color:#fff}
 .topo{display:flex;align-items:center;gap:12px;margin:0 0 14px;color:var(--mut);font-size:.85rem;flex-wrap:wrap}
 .topo button{padding:4px 10px;font-size:.85rem}
 .tema{display:inline-flex}
@@ -29,7 +29,7 @@ h1{font-size:1.4rem;margin:0 0 12px;font-weight:700}
 .tema button:first-child{border-radius:8px 0 0 8px}
 .tema button:last-child{border-radius:0 8px 8px 0}
 .tema button+button{margin-left:-1px}
-.tema button[aria-pressed="true"]{background:var(--blue)!important;border:1px solid var(--blue);color:#fff!important}
+.tema button[aria-pressed="true"]{background:var(--acc)!important;border:1px solid var(--acc);color:#fff!important}
 .panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
 .panel h2{font-size:14px;margin:0;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
@@ -63,7 +63,12 @@ td input[type=checkbox]{margin-right:6px;accent-color:var(--acc);width:16px;heig
 .v{cursor:pointer;border-bottom:1px dotted var(--mut)}
 .v.ed{color:var(--acc);font-weight:700;border-bottom-color:var(--acc)}
 .ei{width:84px;padding:3px 5px;text-align:right}
-.cor{width:22px;height:22px;padding:0;border:0;background:none;vertical-align:middle;margin-left:4px;cursor:pointer}
+.cor{width:22px;height:22px;padding:0;border:2px solid var(--line);border-radius:6px;vertical-align:middle;margin-left:4px;cursor:pointer}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px}
+.modal.hide{display:none}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;width:100%;max-width:320px}
+.box h2{margin-bottom:8px}
+.prev{height:44px;border-radius:8px;border:1px solid var(--line);margin:0 0 10px}
 .rs{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
 .pie{width:170px;height:170px;border-radius:50%;position:relative;flex:0 0 auto}
 .hole{position:absolute;inset:32px;border-radius:50%;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:13px;line-height:1.25}
@@ -94,7 +99,7 @@ td input[type=checkbox]{margin-right:6px;accent-color:var(--acc);width:16px;heig
 <div class="row">
 <label>Nome<input id="an" placeholder="Ex.: Nubank, Itaú…"></label>
 <label>Tipo<select id="at"><option>Cartão</option><option>Conta</option></select></label>
-<label style="flex:0 0 70px">Cor<input id="ac" type="color" style="padding:2px;height:38px"></label>
+<label style="flex:0 0 70px">Cor<button id="acb" class="cor" style="width:100%;height:38px;margin:0" title="Escolher a cor" onclick="abrirCor('new')"></button></label>
 <button class="g" onclick="addAcc()">Adicionar</button>
 </div>
 </div>
@@ -119,10 +124,24 @@ td input[type=checkbox]{margin-right:6px;accent-color:var(--acc);width:16px;heig
 
 <div class="bar"><button class="g" id="ta" onclick="tall()">Minimizar contas</button></div>
 <div class="wrap"><table id="grid"></table></div>
-<p class="dica">Toque no valor de uma parcela para alterá-lo (juros, taxas). Digite 0 para zerar, ou apague o campo para voltar ao valor dividido. Use o ✎ para editar uma compra e o quadradinho de cor para mudar a cor do cartão.</p>
+<p class="dica">Toque no valor de uma parcela para alterá-lo (juros, taxas). Digite 0 para zerar, ou apague o campo para voltar ao valor dividido. Use o ✎ para editar uma compra e o quadradinho de cor para mudar a cor do cartão (pela paleta ou digitando os números RGB).</p>
 <div class="panel" style="margin-top:12px"><div class="ph"><h2>Resumo do mês</h2><span class="row" style="gap:6px;flex-wrap:nowrap"><select id="rm" onchange="selM=+this.value;render()"></select><select id="rmode" onchange="selMode=this.value;render()"><option value="total">Total do mês</option><option value="falta">Só o que falta pagar</option></select></span></div><div id="resumo"></div></div>
 
 </main>
+
+<div id="cd" class="modal hide">
+<div class="box">
+<h2>Cor do cartão</h2>
+<div class="prev" id="cprev"></div>
+<div class="row">
+<label>R (0-255)<input id="cr" type="number" min="0" max="255" inputmode="numeric" oninput="cdRgb()"></label>
+<label>G (0-255)<input id="cg" type="number" min="0" max="255" inputmode="numeric" oninput="cdRgb()"></label>
+<label>B (0-255)<input id="cb" type="number" min="0" max="255" inputmode="numeric" oninput="cdRgb()"></label>
+</div>
+<label style="margin-top:10px">Ou escolha na paleta<input id="cp" type="color" oninput="cdSet(this.value)" style="width:100%;height:40px;padding:2px"></label>
+<div class="row" style="margin-top:14px"><button class="g" onclick="cdOk()">Salvar</button><button onclick="cdFecha()">Cancelar</button></div>
+</div>
+</div>
 
 <script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -133,6 +152,29 @@ const MN=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto'
 let user=null,tmr=null,pendente=false,editing=null,armed=null,selM=null,selMode='total',editId=null;
 const PAL=['#2f5bea','#e8590c','#9c36b5','#0ca678','#e03131','#f08c00','#1098ad','#5c940d'];
 const corDe=(a,i)=>a.color||PAL[i%PAL.length];
+let novaCor=PAL[0],corAlvo=null,corAtual=PAL[0];
+const hex2=n=>Math.max(0,Math.min(255,n|0)).toString(16).padStart(2,'0');
+function abrirCor(alvo){
+  corAlvo=alvo;
+  const a=alvo==='new'?null:S.accounts.find(x=>x.id===alvo);
+  cdSet(alvo==='new'?novaCor:(a?corDe(a,S.accounts.indexOf(a)):PAL[0]));
+  $('cd').classList.remove('hide');
+}
+function cdSet(c){
+  corAtual=c;$('cprev').style.background=c;$('cp').value=c;
+  const n=parseInt(c.slice(1),16);$('cr').value=(n>>16)&255;$('cg').value=(n>>8)&255;$('cb').value=n&255;
+}
+function cdRgb(){
+  const v=['cr','cg','cb'].map(i=>{const x=parseInt($(i).value);return isNaN(x)?0:Math.max(0,Math.min(255,x))});
+  corAtual='#'+v.map(hex2).join('');$('cprev').style.background=corAtual;$('cp').value=corAtual;
+}
+function cdFecha(){$('cd').classList.add('hide');corAlvo=null}
+function cdOk(){
+  const c=corAtual;
+  if(corAlvo==='new'){novaCor=c;$('acb').style.background=c}
+  else if(corAlvo)corAcc(corAlvo,c);
+  cdFecha();
+}
 let S={accounts:[],items:[],paid:{},over:{}};
 let UI={p:{},c:{}};
 try{UI=JSON.parse(localStorage.getItem('parcelas-ui'))||UI}catch(e){}
@@ -161,7 +203,7 @@ const mi=s=>{const[y,m]=s.split('-').map(Number);return y*12+m-1};
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const now=new Date(),cur=now.getFullYear()*12+now.getMonth();
 $('ps').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-$('ac').value=PAL[0];
+$('acb').style.background=novaCor;
 
 function amounts(it){
   const c=Math.round(it.total*100),n=it.n,s=mi(it.start),o={};
@@ -192,7 +234,7 @@ function tpaidAcc(aid,m){
 }
 function addAcc(){
   const n=$('an').value.trim();if(!n)return $('an').focus();
-  S.accounts.push({id:uid(),name:n,type:$('at').value,color:$('ac').value});$('an').value='';$('ac').value=PAL[S.accounts.length%PAL.length];save();render();
+  S.accounts.push({id:uid(),name:n,type:$('at').value,color:novaCor});$('an').value='';novaCor=PAL[S.accounts.length%PAL.length];$('acb').style.background=novaCor;save();render();
 }
 function addItem(){
   const v=parseFloat($('pv').value),n=parseInt($('pn').value)||1;
@@ -255,7 +297,7 @@ function render(){
     its.forEach(i=>ms.forEach((m,k)=>{const v=am.get(i.id)[m]||0;if(S.paid[i.id+':'+m])pd_[k]+=v;else at_[k]+=v}));
     const tot=at_.reduce((x,y)=>x+y,0);
     at_.forEach((v,k)=>colT[k]+=v);pd_.forEach((v,k)=>colP[k]+=v);all+=tot;resRows.push({a,cc,at:at_,pd:pd_});
-    h+=`<tr class="acc" style="--cc:${cc}"><td><button class="tg" title="Minimizar/expandir" onclick="tc('${a.id}')">${UI.c[a.id]?'▶':'▼'}</button>${esc(a.name)} <input type="color" class="cor" value="${cc}" title="Cor do cartão" onchange="corAcc('${a.id}',this.value)"><button class="ghost" title="Apagar" onclick="delAcc('${a.id}')">${armed===a.id?'<span class="arm">Toque de novo p/ apagar</span>':'×'}</button><div class="sub">${a.type} · a pagar no mês atual: ${brl(at_[cur-lo])}</div></td>`+
+    h+=`<tr class="acc" style="--cc:${cc}"><td><button class="tg" title="Minimizar/expandir" onclick="tc('${a.id}')">${UI.c[a.id]?'▶':'▼'}</button>${esc(a.name)} <button class="cor" style="background:${cc}" title="Mudar a cor do cartão" onclick="abrirCor('${a.id}')"></button><button class="ghost" title="Apagar" onclick="delAcc('${a.id}')">${armed===a.id?'<span class="arm">Toque de novo p/ apagar</span>':'×'}</button><div class="sub">${a.type} · a pagar no mês atual: ${brl(at_[cur-lo])}</div></td>`+
       at_.map((v,k)=>{const f=v+pd_[k];if(!f)return '<td class="z">–</td>';const ok=v===0;return `<td class="${ok?'paid':''}"><input type="checkbox" title="Fatura/conta do mês paga" ${ok?'checked':''} onchange="tpaidAcc('${a.id}',${ms[k]})">${brl(ok?f:v)}</td>`}).join('')+`<td>${brl(tot)}</td></tr>`;
     (UI.c[a.id]?[]:its).forEach(i=>{
       const a2=am.get(i.id),t=Object.values(a2).reduce((x,y)=>x+y,0),orig=Math.round(i.total*100)*(i.mode==='fixo'?i.n:1);
@@ -300,6 +342,7 @@ let tema='auto';try{tema=localStorage.getItem('tema')||'auto'}catch(e){}
 aplicarTema(tema);
 document.querySelectorAll('.tema button').forEach(b=>{b.onclick=()=>{tema=b.dataset.t;aplicarTema(tema);try{localStorage.setItem('tema',tema)}catch(e){}}});
 applyP();
+$('cd').onclick=e=>{if(e.target===$('cd'))cdFecha()};
 </script>
 </body>
 </html>
