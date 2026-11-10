@@ -44,9 +44,9 @@ th,td{padding:7px 10px;border-bottom:1px solid var(--line);border-right:1px soli
 th{background:var(--accbg);color:var(--acc);font-size:13px}
 th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--card);z-index:1;min-width:170px;max-width:210px;overflow:hidden;text-overflow:ellipsis}
 th:first-child{background:var(--accbg)}
-tr.acc td{background:var(--accbg);font-weight:700}
-tr.acc td:first-child{background:var(--accbg)}
+tr.acc td,tr.acc td:first-child{background:color-mix(in srgb,var(--cc,var(--acc)) 20%,var(--card));font-weight:700}
 tr.item td:first-child{padding-left:20px}
+tr.acc td:first-child,tr.item td:first-child{border-left:6px solid var(--cc,var(--acc))}
 tr.grand td,tr.grand td:first-child{background:var(--tot);font-weight:700}
 td.z{color:var(--mut);opacity:.4}
 .sub{font-size:11px;color:var(--mut);font-weight:400}
@@ -63,6 +63,13 @@ td input[type=checkbox]{margin-right:6px;accent-color:var(--acc);width:16px;heig
 .v{cursor:pointer;border-bottom:1px dotted var(--mut)}
 .v.ed{color:var(--acc);font-weight:700;border-bottom-color:var(--acc)}
 .ei{width:84px;padding:3px 5px;text-align:right}
+.cor{width:22px;height:22px;padding:0;border:0;background:none;vertical-align:middle;margin-left:4px;cursor:pointer}
+.rs{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.pie{width:170px;height:170px;border-radius:50%;position:relative;flex:0 0 auto}
+.hole{position:absolute;inset:32px;border-radius:50%;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:13px;line-height:1.25}
+.lg{flex:1 1 220px;font-size:14px}
+.lg>div{display:flex;align-items:center;gap:8px;padding:3px 0}
+.dot{width:12px;height:12px;border-radius:3px;flex:0 0 auto}
 .dica{color:var(--mut);font-size:.85rem;margin:6px 0 0}
 @media print{.menu,.topo,.panel,.bar{display:none!important}body{background:#fff}}
 </style>
@@ -87,6 +94,7 @@ td input[type=checkbox]{margin-right:6px;accent-color:var(--acc);width:16px;heig
 <div class="row">
 <label>Nome<input id="an" placeholder="Ex.: Nubank, Itaú…"></label>
 <label>Tipo<select id="at"><option>Cartão</option><option>Conta</option></select></label>
+<label style="flex:0 0 70px">Cor<input id="ac" type="color" style="padding:2px;height:38px"></label>
 <button class="g" onclick="addAcc()">Adicionar</button>
 </div>
 </div>
@@ -95,7 +103,7 @@ td input[type=checkbox]{margin-right:6px;accent-color:var(--acc);width:16px;heig
 <div class="panel">
 <button class="g big hide" id="b2" onclick="tp(2)">ANOTAR COMPRA OU CONTA</button>
 <div id="c2">
-<div class="ph"><h2>2. Anotar compra ou conta</h2><button class="min" title="Minimizar" onclick="tp(2)">–</button></div>
+<div class="ph"><h2 id="p2t">2. Anotar compra ou conta</h2><button class="min" title="Minimizar" onclick="tp(2)">–</button></div>
 <div class="row">
 <label>Cartão/conta<select id="pa"></select></label>
 <label>Descrição<input id="pd" placeholder="Ex.: Tênis"></label>
@@ -103,14 +111,16 @@ td input[type=checkbox]{margin-right:6px;accent-color:var(--acc);width:16px;heig
 <label>Forma<select id="pm"><option value="parc">Parcelado (valor total ÷ parcelas)</option><option value="fixo">Mesmo valor por mês</option></select></label>
 <label>Nº de meses/parcelas<input id="pn" type="number" min="1" value="1"></label>
 <label>Primeiro mês<input id="ps" type="month"></label>
-<button class="g" onclick="addItem()">Adicionar</button>
+<button class="g" id="pbtn" onclick="addItem()">Adicionar</button>
+<button id="pcan" class="hide" onclick="cancelEd()">Cancelar</button>
 </div>
 </div>
 </div>
 
 <div class="bar"><button class="g" id="ta" onclick="tall()">Minimizar contas</button></div>
 <div class="wrap"><table id="grid"></table></div>
-<p class="dica">Toque no valor de uma parcela para alterá-lo (juros, taxas). Digite 0 para zerar, ou apague o campo para voltar ao valor dividido.</p>
+<p class="dica">Toque no valor de uma parcela para alterá-lo (juros, taxas). Digite 0 para zerar, ou apague o campo para voltar ao valor dividido. Use o ✎ para editar uma compra e o quadradinho de cor para mudar a cor do cartão.</p>
+<div class="panel" style="margin-top:12px"><div class="ph"><h2>Resumo do mês</h2><span class="row" style="gap:6px;flex-wrap:nowrap"><select id="rm" onchange="selM=+this.value;render()"></select><select id="rmode" onchange="selMode=this.value;render()"><option value="total">Total do mês</option><option value="falta">Só o que falta pagar</option></select></span></div><div id="resumo"></div></div>
 
 </main>
 
@@ -120,7 +130,9 @@ td input[type=checkbox]{margin-right:6px;accent-color:var(--acc);width:16px;heig
 const C=window.CONFIG||{},sb=window.supabase.createClient(C.url||"COLE_AQUI_A_URL_DO_PROJETO",C.key||"COLE_AQUI_A_CHAVE_ANON");
 const $=i=>document.getElementById(i);
 const MN=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-let user=null,tmr=null,pendente=false,editing=null,armed=null;
+let user=null,tmr=null,pendente=false,editing=null,armed=null,selM=null,selMode='total',editId=null;
+const PAL=['#2f5bea','#e8590c','#9c36b5','#0ca678','#e03131','#f08c00','#1098ad','#5c940d'];
+const corDe=(a,i)=>a.color||PAL[i%PAL.length];
 let S={accounts:[],items:[],paid:{},over:{}};
 let UI={p:{},c:{}};
 try{UI=JSON.parse(localStorage.getItem('parcelas-ui'))||UI}catch(e){}
@@ -149,6 +161,7 @@ const mi=s=>{const[y,m]=s.split('-').map(Number);return y*12+m-1};
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const now=new Date(),cur=now.getFullYear()*12+now.getMonth();
 $('ps').value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+$('ac').value=PAL[0];
 
 function amounts(it){
   const c=Math.round(it.total*100),n=it.n,s=mi(it.start),o={};
@@ -179,17 +192,43 @@ function tpaidAcc(aid,m){
 }
 function addAcc(){
   const n=$('an').value.trim();if(!n)return $('an').focus();
-  S.accounts.push({id:uid(),name:n,type:$('at').value});$('an').value='';save();render();
+  S.accounts.push({id:uid(),name:n,type:$('at').value,color:$('ac').value});$('an').value='';$('ac').value=PAL[S.accounts.length%PAL.length];save();render();
 }
 function addItem(){
   const v=parseFloat($('pv').value),n=parseInt($('pn').value)||1;
   if(!$('pa').value)return alert('Cadastre um cartão ou conta primeiro.');
   if(!(v>0))return $('pv').focus();
   if(!$('ps').value)return $('ps').focus();
-  S.items.push({id:uid(),acc:$('pa').value,desc:$('pd').value.trim()||'Compra',total:v,n:Math.max(1,n),start:$('ps').value,mode:$('pm').value});
-  $('pd').value='';$('pv').value='';$('pn').value=1;save();render();
+  const novo={acc:$('pa').value,desc:$('pd').value.trim()||'Compra',total:v,n:Math.max(1,n),start:$('ps').value,mode:$('pm').value};
+  if(editId){
+    const it=S.items.find(i=>i.id===editId);
+    if(it){
+      const mudou=it.total!==novo.total||it.n!==novo.n||it.start!==novo.start||it.mode!==novo.mode;
+      Object.assign(it,novo);
+      if(mudou)Object.keys(S.over).forEach(k=>{if(k.startsWith(it.id+':'))delete S.over[k]});
+      const ok=Object.keys(amounts(it));
+      Object.keys(S.paid).forEach(k=>{if(k.startsWith(it.id+':')&&!ok.includes(k.slice(it.id.length+1)))delete S.paid[k]});
+    }
+    cancelEd();
+  }else{
+    S.items.push(Object.assign({id:uid()},novo));
+    $('pd').value='';$('pv').value='';$('pn').value=1;
+  }
+  save();render();
 }
-function delItem(id){S.items=S.items.filter(i=>i.id!==id);limpar(id);save();render()}
+function delItem(id){if(editId===id)cancelEd();S.items=S.items.filter(i=>i.id!==id);limpar(id);save();render()}
+function corAcc(id,v){const a=S.accounts.find(x=>x.id===id);if(a){a.color=v;save();render()}}
+function editarItem(id){
+  const it=S.items.find(i=>i.id===id);if(!it)return;
+  editId=id;UI.p[2]=false;saveUI();applyP();
+  $('pa').value=it.acc;$('pd').value=it.desc;$('pv').value=it.total;$('pm').value=it.mode;$('pn').value=it.n;$('ps').value=it.start;
+  $('p2t').textContent='2. Editar compra';$('pbtn').textContent='Salvar alterações';$('pcan').classList.remove('hide');
+  $('c2').scrollIntoView({behavior:'smooth',block:'center'});
+}
+function cancelEd(){
+  editId=null;$('pd').value='';$('pv').value='';$('pn').value=1;
+  $('p2t').textContent='2. Anotar compra ou conta';$('pbtn').textContent='Adicionar';$('pcan').classList.add('hide');
+}
 function delAcc(id){
   if(armed!==id){armed=id;render();setTimeout(()=>{if(armed===id){armed=null;render()}},4000);return}
   armed=null;
@@ -202,31 +241,43 @@ function render(){
   if(S.accounts.some(a=>a.id===cur0))$('pa').value=cur0;
   const g=$('grid');
   $('ta').textContent=S.accounts.length&&S.accounts.every(a=>UI.c[a.id])?'Expandir contas':'Minimizar contas';
-  if(!S.accounts.length){g.innerHTML='<tr><td class="empty">Cadastre um cartão ou conta para começar.</td></tr>';return}
+  if(!S.accounts.length){g.innerHTML='<tr><td class="empty">Cadastre um cartão ou conta para começar.</td></tr>';$('resumo').innerHTML='';$('rm').innerHTML='';return}
   let lo=cur,hi=cur+5;
   const am=new Map();
   S.items.forEach(it=>{const a=amounts(it);am.set(it.id,a);const k=Object.keys(a).map(Number);lo=Math.min(lo,...k);hi=Math.max(hi,...k)});
   const ms=[];for(let m=lo;m<=hi;m++)ms.push(m);
-  const colT=ms.map(()=>0),colP=ms.map(()=>0);let all=0;
+  const colT=ms.map(()=>0),colP=ms.map(()=>0),resRows=[];let all=0;
   let h='<tr><th>Cartão / conta</th>'+ms.map(m=>`<th>${MN[m%12]}<div class="sub">${Math.floor(m/12)}</div></th>`).join('')+'<th>Total</th></tr>';
-  S.accounts.forEach(a=>{
+  S.accounts.forEach((a,ai)=>{
+    const cc=corDe(a,ai);
     const its=S.items.filter(i=>i.acc===a.id);
     const at_=ms.map(()=>0),pd_=ms.map(()=>0);
     its.forEach(i=>ms.forEach((m,k)=>{const v=am.get(i.id)[m]||0;if(S.paid[i.id+':'+m])pd_[k]+=v;else at_[k]+=v}));
     const tot=at_.reduce((x,y)=>x+y,0);
-    at_.forEach((v,k)=>colT[k]+=v);pd_.forEach((v,k)=>colP[k]+=v);all+=tot;
-    h+=`<tr class="acc"><td><button class="tg" title="Minimizar/expandir" onclick="tc('${a.id}')">${UI.c[a.id]?'▶':'▼'}</button>${esc(a.name)} <button class="ghost" title="Apagar" onclick="delAcc('${a.id}')">${armed===a.id?'<span class="arm">Toque de novo p/ apagar</span>':'×'}</button><div class="sub">${a.type} · a pagar no mês atual: ${brl(at_[cur-lo])}</div></td>`+
+    at_.forEach((v,k)=>colT[k]+=v);pd_.forEach((v,k)=>colP[k]+=v);all+=tot;resRows.push({a,cc,at:at_,pd:pd_});
+    h+=`<tr class="acc" style="--cc:${cc}"><td><button class="tg" title="Minimizar/expandir" onclick="tc('${a.id}')">${UI.c[a.id]?'▶':'▼'}</button>${esc(a.name)} <input type="color" class="cor" value="${cc}" title="Cor do cartão" onchange="corAcc('${a.id}',this.value)"><button class="ghost" title="Apagar" onclick="delAcc('${a.id}')">${armed===a.id?'<span class="arm">Toque de novo p/ apagar</span>':'×'}</button><div class="sub">${a.type} · a pagar no mês atual: ${brl(at_[cur-lo])}</div></td>`+
       at_.map((v,k)=>{const f=v+pd_[k];if(!f)return '<td class="z">–</td>';const ok=v===0;return `<td class="${ok?'paid':''}"><input type="checkbox" title="Fatura/conta do mês paga" ${ok?'checked':''} onchange="tpaidAcc('${a.id}',${ms[k]})">${brl(ok?f:v)}</td>`}).join('')+`<td>${brl(tot)}</td></tr>`;
     (UI.c[a.id]?[]:its).forEach(i=>{
       const a2=am.get(i.id),t=Object.values(a2).reduce((x,y)=>x+y,0),orig=Math.round(i.total*100)*(i.mode==='fixo'?i.n:1);
       const rem=Object.keys(a2).reduce((s,m)=>s+(S.paid[i.id+':'+m]?0:a2[m]),0);
       const info=i.mode==='fixo'?`${i.n}× fixo`:(i.n>1?`${i.n}x`:'à vista');
-      h+=`<tr class="item"><td title="${esc(i.desc)}">${esc(i.desc)} <button class="ghost" title="Apagar" onclick="delItem('${i.id}')">×</button><div class="sub">${brl(orig)} · ${info}${t!==orig?' · real: '+brl(t):''}</div></td>`+
+      h+=`<tr class="item" style="--cc:${cc}"><td title="${esc(i.desc)}">${esc(i.desc)} <button class="ghost" style="color:var(--mut);font-size:13px" title="Editar" onclick="editarItem('${i.id}')">✎</button><button class="ghost" title="Apagar" onclick="delItem('${i.id}')">×</button><div class="sub">${brl(orig)} · ${info}${t!==orig?' · real: '+brl(t):''}</div></td>`+
         ms.map(m=>{if(a2[m]===undefined)return '<td class="z">–</td>';const k=i.id+':'+m,p=S.paid[k],ov=S.over[k]!=null;const val=editing===k?`<input id="ei" class="ei" inputmode="decimal" placeholder="vazio = padrão" value="${(a2[m]/100).toFixed(2).replace('.',',')}" onblur="commitEd('${k}',this.value)" onkeydown="if(event.key==='Enter')commitEd('${k}',this.value);else if(event.key==='Escape')commitEd('${k}','',1)">`:`<span class="v${ov?' ed':''}" onclick="ed('${k}')" title="Toque para alterar o valor">${brl(a2[m])}</span>`;return `<td class="${p?'paid':''}"><input type="checkbox" title="Paga" ${p?'checked':''} onchange="tpaid('${k}')">${val}</td>`}).join('')+`<td>${brl(rem)}</td></tr>`;
     });
   });
   h+='<tr class="grand"><td>TOTAL A PAGAR<div class="sub">só o que não está marcado como pago</div></td>'+colT.map((v,k)=>`<td>${brl(v)}${colP[k]?`<div class="sub">pago ${brl(colP[k])}</div>`:''}</td>`).join('')+`<td>${brl(all)}</td></tr>`;
   g.innerHTML=h;
+  if(selM===null||selM<lo||selM>hi)selM=cur;
+  $('rm').innerHTML=ms.map(m=>`<option value="${m}"${m===selM?' selected':''}>${MN[m%12]}/${Math.floor(m/12)}</option>`).join('');
+  const ix=selM-lo,falta=selMode==='falta';
+  const sl=resRows.map(r=>({n:r.a.name,c:r.cc,v:falta?r.at[ix]:r.at[ix]+r.pd[ix]})).filter(x=>x.v>0);
+  const somaP=sl.reduce((s,x)=>s+x.v,0),pagoT=resRows.reduce((s,r)=>s+r.pd[ix],0),pagarT=resRows.reduce((s,r)=>s+r.at[ix],0);
+  if(!somaP){$('resumo').innerHTML='<div class="empty">Nada a mostrar neste mês.</div>'}
+  else{
+    let ac=0;
+    const stops=sl.map(x=>{const a0=ac/somaP*100;ac+=x.v;return `${x.c} ${a0}% ${ac/somaP*100}%`}).join(',');
+    $('resumo').innerHTML=`<div class="rs"><div class="pie" style="background:conic-gradient(${stops})"><div class="hole"><span class="sub">${falta?'Falta pagar':'Total do mês'}</span><b>${brl(somaP)}</b></div></div><div class="lg">${sl.map(x=>`<div><span class="dot" style="background:${x.c}"></span><span style="flex:1">${esc(x.n)}</span><span>${brl(x.v)} · ${Math.round(x.v/somaP*100)}%</span></div>`).join('')}<div class="sub" style="margin-top:6px">Já pago: ${brl(pagoT)} · Falta pagar: ${brl(pagarT)}</div></div></div>`;
+  }
 }
 
 /* ---------- login, tema ---------- */
