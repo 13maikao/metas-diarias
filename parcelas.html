@@ -44,10 +44,11 @@ button.ghost{background:none;border:0;color:var(--red);padding:2px 6px;font-size
 table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
 th,td{padding:7px 10px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);text-align:right;white-space:nowrap}
 th{background:var(--accbg);color:var(--acc);font-size:13px}
-th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--card);z-index:1;min-width:170px;max-width:210px;overflow:hidden;text-overflow:ellipsis}
+th:first-child,td:first-child{text-align:left;position:sticky;left:0;background:var(--card);z-index:1;min-width:200px;max-width:280px;overflow:hidden;text-overflow:ellipsis}
 th:first-child{background:var(--accbg)}
 tr.acc td,tr.acc td:first-child{background:color-mix(in srgb,var(--cc,var(--acc)) 20%,var(--card));font-weight:700}
 tr.item td:first-child{padding-left:20px}
+td:first-child .sub{white-space:normal}
 tr.acc td:first-child,tr.item td:first-child{border-left:6px solid var(--cc,var(--acc))}
 tr.grand td,tr.grand td:first-child{background:var(--tot);font-weight:700}
 td.z{color:var(--mut);opacity:.4}
@@ -101,6 +102,7 @@ td input[type=checkbox]{margin-right:6px;accent-color:var(--acc);width:16px;heig
 <div class="row">
 <label>Nome<input id="an" placeholder="Ex.: Nubank, Itaú…"></label>
 <label>Tipo<select id="at"><option>Cartão</option><option>Conta</option></select></label>
+<label style="flex:0 0 120px">Vencimento (dia)<input id="av" type="number" min="1" max="31" inputmode="numeric" placeholder="Ex.: 10"></label>
 <label style="flex:0 0 70px">Cor<button id="acb" class="cor" style="width:100%;height:38px;margin:0" title="Escolher a cor" onclick="abrirCor('new')"></button></label>
 <button class="g" onclick="addAcc()">Adicionar</button>
 </div>
@@ -236,7 +238,7 @@ function tpaidAcc(aid,m){
 }
 function addAcc(){
   const n=$('an').value.trim();if(!n)return $('an').focus();
-  S.accounts.push({id:uid(),name:n,type:$('at').value,color:novaCor});$('an').value='';novaCor=PAL[S.accounts.length%PAL.length];$('acb').style.background=novaCor;save();render();
+  S.accounts.push({id:uid(),name:n,type:$('at').value,color:novaCor,venc:Math.min(31,Math.max(0,parseInt($('av').value)||0))});$('an').value='';$('av').value='';novaCor=PAL[S.accounts.length%PAL.length];$('acb').style.background=novaCor;save();render();
 }
 function addItem(){
   const v=parseFloat($('pv').value),n=parseInt($('pn').value)||1;
@@ -261,6 +263,11 @@ function addItem(){
   save();render();
 }
 function delItem(id){if(editId===id)cancelEd();S.items=S.items.filter(i=>i.id!==id);limpar(id);save();render()}
+function editVenc(id){
+  const a=S.accounts.find(x=>x.id===id);if(!a)return;
+  const r=prompt('Dia do vencimento da fatura (1 a 31). Deixe vazio para tirar:',a.venc||'');
+  if(r===null)return;const n=parseInt(r,10);a.venc=(n>=1&&n<=31)?n:0;save();render();
+}
 function corAcc(id,v){const a=S.accounts.find(x=>x.id===id);if(a){a.color=v;save();render()}}
 function editarItem(id){
   const it=S.items.find(i=>i.id===id);if(!it)return;
@@ -299,7 +306,7 @@ function render(){
     its.forEach(i=>ms.forEach((m,k)=>{const v=am.get(i.id)[m]||0;if(S.paid[i.id+':'+m])pd_[k]+=v;else at_[k]+=v}));
     const tot=at_.reduce((x,y)=>x+y,0);
     at_.forEach((v,k)=>colT[k]+=v);pd_.forEach((v,k)=>colP[k]+=v);all+=tot;resRows.push({a,cc,at:at_,pd:pd_});
-    h+=`<tr class="acc" style="--cc:${cc}"><td><button class="tg" title="Minimizar/expandir" onclick="tc('${a.id}')">${UI.c[a.id]?'▶':'▼'}</button>${esc(a.name)} <button class="cor" style="background:${cc}" title="Mudar a cor do cartão" onclick="abrirCor('${a.id}')"></button><button class="ghost" title="Apagar" onclick="delAcc('${a.id}')">${armed===a.id?'<span class="arm">Toque de novo p/ apagar</span>':'×'}</button><div class="sub">${a.type} · a pagar no mês atual: ${brl(at_[cur-lo])}</div></td>`+
+    h+=`<tr class="acc" style="--cc:${cc}"><td><button class="tg" title="Minimizar/expandir" onclick="tc('${a.id}')">${UI.c[a.id]?'▶':'▼'}</button>${esc(a.name)} <button class="cor" style="background:${cc}" title="Mudar a cor do cartão" onclick="abrirCor('${a.id}')"></button><button class="ghost" title="Apagar" onclick="delAcc('${a.id}')">${armed===a.id?'<span class="arm">Toque de novo p/ apagar</span>':'×'}</button><div class="sub">${a.type} · <span class="v" onclick="editVenc('${a.id}')" title="Dia do vencimento da fatura">${a.venc?'vence dia '+a.venc:'definir vencimento'}</span></div><div class="sub">a pagar no mês atual: ${brl(at_[cur-lo])}</div></td>`+
       at_.map((v,k)=>{const f=v+pd_[k];if(!f)return '<td class="z">–</td>';const ok=v===0;return `<td class="${ok?'paid':''}"><input type="checkbox" title="Fatura/conta do mês paga" ${ok?'checked':''} onchange="tpaidAcc('${a.id}',${ms[k]})">${brl(ok?f:v)}</td>`}).join('')+`<td>${brl(tot)}</td></tr>`;
     (UI.c[a.id]?[]:its).forEach(i=>{
       const a2=am.get(i.id),t=Object.values(a2).reduce((x,y)=>x+y,0),orig=Math.round(i.total*100)*(i.mode==='fixo'?i.n:1);

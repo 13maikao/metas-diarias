@@ -136,7 +136,7 @@ function amounts(it){
   Object.keys(o).forEach(m=>{const v=PARC.over[it.id+':'+m];if(v!=null)o[m]=v});
   return o;
 }
-const contasMes=m=>META.contas.filter(c=>c.mes===m);
+const contasMes=m=>META.contas.filter(c=>c.mes===m&&!c.parcId);
 function parcMes(m){
   const k=idx(m),rows=[];
   PARC.items.forEach(it=>{const a=amounts(it);if(a[k]!==undefined)rows.push({it,v:a[k]/100,paid:!!PARC.paid[it.id+':'+k]})});
@@ -165,7 +165,7 @@ async function carregar(){
 function grafico(){
   const pts=[];
   for(let k=-2;k<=9;k++){const m=mover(ym,k);pts.push({m,v:totais(m).tot})}
-  const W=640,H=230,L=56,R=16,T=34,B=28,n=pts.length;
+  const W=640,H=230,L=76,R=16,T=34,B=28,n=pts.length;
   const max=Math.max(...pts.map(p=>p.v),1)*1.2;
   const X=i=>L+i*(W-L-R)/(n-1),Y=v=>T+(H-T-B)*(1-v/max);
   let g='';
